@@ -123,7 +123,7 @@ mkdir -p media/archive logs
 docker compose build
 docker compose up -d
 docker compose exec -T app alembic upgrade head
-docker compose exec -T app python scripts/create_admin.py
+docker compose exec -T app python -m scripts.create_admin
 check_ome
 
 echo "Публичный сайт: http://$(hostname -I | awk '{print $1}')/"

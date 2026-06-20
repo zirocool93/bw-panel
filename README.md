@@ -13,7 +13,7 @@ cp .env.example .env
 docker compose build
 docker compose up -d
 docker compose exec app alembic upgrade head
-docker compose exec app python scripts/create_admin.py
+docker compose exec app python -m scripts.create_admin
 ```
 
 После запуска откройте `/admin`. Данные первого администратора берутся из `ADMIN_USERNAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
