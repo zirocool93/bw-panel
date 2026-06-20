@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import AccessMode, Tournament, TournamentStream
+from app.models import AccessMode, SourceType, Tournament, TournamentStream
 from app.services.access import can_view_tournament, create_stream_token
 from app.services.ome import OmeService
 
@@ -52,7 +52,16 @@ def playback_url(stream_id: int, request: Request, db: Session = Depends(get_db)
     tournament = stream.tournament
     if not can_view_tournament(request.session, tournament):
         raise HTTPException(status_code=403, detail="Нет доступа к турниру")
+    service = OmeService()
+    if stream.source_type == SourceType.external:
+        resolved_playback_url = stream.external_url or stream.playback_url
+    else:
+        resolved_playback_url = service.browser_playback_url(
+            stream.ome_app_name,
+            stream.ome_stream_name or "",
+            str(request.base_url),
+        )
     if tournament.access_mode == AccessMode.token or stream.token_required:
         token = create_stream_token(db, tournament, stream)
-        return {"playback_url": stream.playback_url or OmeService().playback_url(stream.ome_app_name, stream.ome_stream_name or "", stream.playback_type.value), "token": token.token, "expires_at": token.expires_at}
-    return {"playback_url": stream.playback_url or OmeService().playback_url(stream.ome_app_name, stream.ome_stream_name or "", stream.playback_type.value)}
+        return {"playback_url": resolved_playback_url, "token": token.token, "expires_at": token.expires_at}
+    return {"playback_url": resolved_playback_url}

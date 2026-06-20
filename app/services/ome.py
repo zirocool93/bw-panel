@@ -15,10 +15,16 @@ class OmeService:
         suffix = entity_id if entity_id else token_urlsafe(6)
         return f"{prefix}_{suffix}".replace("-", "_")
 
-    def playback_url(self, app_name: str, stream_name: str, playback_type: str = "hls") -> str:
-        suffix = "llhls.m3u8" if playback_type == "ll_hls" else "playlist.m3u8"
-        base = self.settings.nginx_hls_base_url.rstrip("/")
+    def playback_url(self, app_name: str, stream_name: str, playback_type: str = "hls", base_url: str | None = None) -> str:
+        # В текущей конфигурации OME включен LLHLS publisher, поэтому даже режим hls
+        # отдаем через llhls.m3u8. Это совместимо с hls.js в браузере.
+        suffix = "llhls.m3u8"
+        base = (base_url or self.settings.nginx_hls_base_url).rstrip("/")
         return f"{base}/{app_name}/{stream_name}/{suffix}"
+
+    def browser_playback_url(self, app_name: str, stream_name: str, request_base_url: str) -> str:
+        hls_base = f"{request_base_url.rstrip('/')}/hls"
+        return self.playback_url(app_name, stream_name, base_url=hls_base)
 
     def obs_ingest_url(self, stream_key: str, protocol: str = "rtmp") -> str:
         if protocol != "rtmp":
