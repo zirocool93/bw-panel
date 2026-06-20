@@ -77,6 +77,13 @@ configure_public_urls() {
   fi
 }
 
+ensure_camera_defaults() {
+  current_transcode="$(grep -E '^CAMERA_RESTREAM_TRANSCODE=' .env | cut -d= -f2- || true)"
+  if [ -z "$current_transcode" ]; then
+    set_env_value CAMERA_RESTREAM_TRANSCODE "0"
+  fi
+}
+
 check_ome() {
   echo "Проверка OvenMediaEngine..."
   if ! docker compose ps ovenmediaengine | grep -qi "running\|up"; then
@@ -152,6 +159,7 @@ cd "$TARGET_DIR"
 prompt_admin_credentials
 ensure_ome_token
 configure_public_urls
+ensure_camera_defaults
 mkdir -p media/archive logs
 docker compose build
 docker compose up -d

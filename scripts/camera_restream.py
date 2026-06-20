@@ -4,12 +4,29 @@ import subprocess
 import time
 
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import SessionLocal
-from app.models import Camera
+from app.models import Camera, SystemSetting
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("camera_restream")
+
+
+DEFAULT_RESTREAM_SETTINGS = {
+    "camera_restream_transcode": os.getenv("CAMERA_RESTREAM_TRANSCODE", "0"),
+    "camera_restream_video_filter": os.getenv("CAMERA_RESTREAM_VIDEO_FILTER", "scale='min(1920,iw)':-2"),
+    "camera_restream_video_bitrate": os.getenv("CAMERA_RESTREAM_VIDEO_BITRATE", "4500k"),
+    "camera_restream_video_maxrate": os.getenv("CAMERA_RESTREAM_VIDEO_MAXRATE", "5000k"),
+    "camera_restream_video_bufsize": os.getenv("CAMERA_RESTREAM_VIDEO_BUFSIZE", "9000k"),
+    "camera_restream_fps": os.getenv("CAMERA_RESTREAM_FPS", "20"),
+    "camera_restream_gop": os.getenv("CAMERA_RESTREAM_GOP", "40"),
+    "camera_restream_x264_preset": os.getenv("CAMERA_RESTREAM_X264_PRESET", "veryfast"),
+}
+
+
+def as_enabled(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on", "вкл"}
 
 
 def rtmp_url(stream_name: str) -> str:
@@ -17,8 +34,8 @@ def rtmp_url(stream_name: str) -> str:
     return f"{base}/{stream_name}"
 
 
-def build_ffmpeg_command(camera: Camera) -> list[str]:
-    transcode = os.getenv("CAMERA_RESTREAM_TRANSCODE", "1") == "1"
+def build_ffmpeg_command(camera: Camera, settings: dict[str, str]) -> list[str]:
+    transcode = as_enabled(settings.get("camera_restream_transcode"))
     common = [
         "ffmpeg",
         "-hide_banner",
@@ -56,7 +73,7 @@ def build_ffmpeg_command(camera: Camera) -> list[str]:
         "-c:v",
         "libx264",
         "-preset",
-        os.getenv("CAMERA_RESTREAM_X264_PRESET", "veryfast"),
+        settings["camera_restream_x264_preset"],
         "-tune",
         "zerolatency",
         "-profile:v",
@@ -64,28 +81,28 @@ def build_ffmpeg_command(camera: Camera) -> list[str]:
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        os.getenv("CAMERA_RESTREAM_VIDEO_FILTER", "scale='min(1920,iw)':-2"),
+        settings["camera_restream_video_filter"],
         "-r",
-        os.getenv("CAMERA_RESTREAM_FPS", "20"),
+        settings["camera_restream_fps"],
         "-g",
-        os.getenv("CAMERA_RESTREAM_GOP", "40"),
+        settings["camera_restream_gop"],
         "-keyint_min",
-        os.getenv("CAMERA_RESTREAM_GOP", "40"),
+        settings["camera_restream_gop"],
         "-sc_threshold",
         "0",
         "-b:v",
-        os.getenv("CAMERA_RESTREAM_VIDEO_BITRATE", "4500k"),
+        settings["camera_restream_video_bitrate"],
         "-maxrate",
-        os.getenv("CAMERA_RESTREAM_VIDEO_MAXRATE", "5000k"),
+        settings["camera_restream_video_maxrate"],
         "-bufsize",
-        os.getenv("CAMERA_RESTREAM_VIDEO_BUFSIZE", "9000k"),
+        settings["camera_restream_video_bufsize"],
         *output,
     ]
 
 
-def load_active_cameras() -> list[Camera]:
+def load_worker_state() -> tuple[list[Camera], dict[str, str]]:
     with SessionLocal() as db:
-        return list(
+        cameras = list(
             db.scalars(
                 select(Camera).where(
                     Camera.is_active.is_(True),
@@ -94,27 +111,52 @@ def load_active_cameras() -> list[Camera]:
                 )
             ).all()
         )
+        settings = DEFAULT_RESTREAM_SETTINGS.copy()
+        for item in db.scalars(select(SystemSetting).where(SystemSetting.key.in_(settings.keys()))):
+            if item.value not in {None, ""}:
+                settings[item.key] = item.value
+        return cameras, settings
 
 
 def main() -> None:
     poll_seconds = int(os.getenv("CAMERA_RESTREAM_POLL_SECONDS", "10"))
     processes: dict[int, subprocess.Popen] = {}
+    process_signatures: dict[int, tuple[str, ...]] = {}
 
     while True:
-        active_cameras = {camera.id: camera for camera in load_active_cameras()}
+        try:
+            cameras, settings = load_worker_state()
+        except SQLAlchemyError as exc:
+            logger.warning("БД еще не готова или миграции не применены: %s", exc)
+            time.sleep(poll_seconds)
+            continue
+
+        active_cameras = {camera.id: camera for camera in cameras}
 
         for camera_id, process in list(processes.items()):
             if camera_id not in active_cameras or process.poll() is not None:
                 if process.poll() is None:
                     process.terminate()
                 processes.pop(camera_id, None)
+                process_signatures.pop(camera_id, None)
 
         for camera_id, camera in active_cameras.items():
-            if camera_id in processes:
+            command = build_ffmpeg_command(camera, settings)
+            signature = tuple(command)
+            if camera_id in processes and process_signatures.get(camera_id) == signature:
                 continue
-            command = build_ffmpeg_command(camera)
-            logger.info("Запуск ретрансляции камеры %s в %s", camera.title, rtmp_url(camera.ome_stream_name or ""))
+            if camera_id in processes:
+                logger.info("Перезапуск ретрансляции камеры %s из-за изменения настроек", camera.title)
+                processes[camera_id].terminate()
+                processes.pop(camera_id, None)
+            logger.info(
+                "Запуск ретрансляции камеры %s в %s, перекодирование=%s",
+                camera.title,
+                rtmp_url(camera.ome_stream_name or ""),
+                "вкл" if as_enabled(settings.get("camera_restream_transcode")) else "выкл",
+            )
             processes[camera_id] = subprocess.Popen(command)
+            process_signatures[camera_id] = signature
 
         time.sleep(poll_seconds)
 

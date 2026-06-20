@@ -2,6 +2,45 @@
 {% block heading %}Настройки{% endblock %}
 {% block content %}
 <form method="post" action="/admin/settings">
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h5">Ретрансляция камер</h2>
+    <div class="form-check form-switch mb-3">
+      <input class="form-check-input" type="checkbox" role="switch" id="camera_restream_transcode" name="camera_restream_transcode" value="1" {% if values.get("camera_restream_transcode", "0") in ["1", "true", "on", "yes"] %}checked{% endif %}>
+      <label class="form-check-label" for="camera_restream_transcode">Перекодировать RTSP-камеры в browser-friendly H.264</label>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Видео-фильтр ffmpeg</label>
+        <input name="camera_restream_video_filter" class="form-control" value="{{ values.get("camera_restream_video_filter", "scale='min(1920,iw)':-2") }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Битрейт</label>
+        <input name="camera_restream_video_bitrate" class="form-control" value="{{ values.get("camera_restream_video_bitrate", "4500k") }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Maxrate</label>
+        <input name="camera_restream_video_maxrate" class="form-control" value="{{ values.get("camera_restream_video_maxrate", "5000k") }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Bufsize</label>
+        <input name="camera_restream_video_bufsize" class="form-control" value="{{ values.get("camera_restream_video_bufsize", "9000k") }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">FPS</label>
+        <input name="camera_restream_fps" class="form-control" value="{{ values.get("camera_restream_fps", "20") }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">GOP</label>
+        <input name="camera_restream_gop" class="form-control" value="{{ values.get("camera_restream_gop", "40") }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">x264 preset</label>
+        <input name="camera_restream_x264_preset" class="form-control" value="{{ values.get("camera_restream_x264_preset", "veryfast") }}">
+      </div>
+    </div>
+    <div class="form-text mt-2">После сохранения camera-worker перечитает настройки и перезапустит ffmpeg-процессы автоматически.</div>
+  </div></div>
+
   <table class="table bg-white"><thead><tr><th>Ключ</th><th>Значение</th><th>Описание</th></tr></thead><tbody>
   {% for item in items %}
   <tr><td><input name="key" class="form-control" value="{{ item.key }}"></td><td><input name="value" class="form-control" value="{{ item.value or "" }}"></td><td><input name="description" class="form-control" value="{{ item.description or "" }}"></td></tr>
