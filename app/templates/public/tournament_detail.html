@@ -1,0 +1,38 @@
+{% extends "public/base.html" %}
+{% block title %}{{ tournament.title }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="/tournaments" class="text-decoration-none">&larr; Все турниры</a>
+  <h1 class="mt-2">{{ tournament.title }}</h1>
+  <p class="text-muted">{{ tournament.date_start.strftime("%d.%m.%Y %H:%M") if tournament.date_start else "Дата не задана" }}</p>
+  <p>{{ tournament.description or "" }}</p>
+</div>
+{% if tournament.access_mode.value == "password" and not allowed %}
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h5">Турнир защищен паролем</h2>
+    {% if password_error %}<div class="alert alert-danger">Неверный пароль.</div>{% endif %}
+    <form method="post" action="/tournaments/{{ tournament.slug }}/password" class="row g-2">
+      <div class="col-md-8"><input type="password" name="password" class="form-control" placeholder="Пароль трансляции" required></div>
+      <div class="col-md-4"><button class="btn btn-primary w-100">Открыть доступ</button></div>
+    </form>
+  </div></div>
+{% else %}
+  <h2 class="h4">Главная трансляция</h2>
+  {% with stream=main_stream %}{% include "components/player.html" %}{% endwith %}
+  <h2 class="h4 mt-4">Доступные трансляции</h2>
+  <div class="row g-3">
+    {% for stream in streams %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card h-100"><div class="card-body">
+        <div class="d-flex justify-content-between gap-2">
+          <h3 class="h5">{{ stream.title }}</h3>
+          {% if stream.is_active %}<span class="badge text-bg-success">Вкл</span>{% else %}<span class="badge text-bg-secondary">Выкл</span>{% endif %}
+        </div>
+        <p class="text-muted">{{ stream.description or "Описание не задано." }}</p>
+        <a class="btn btn-outline-primary" href="/tournaments/{{ tournament.slug }}/streams/{{ stream.id }}">Открыть</a>
+      </div></div>
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

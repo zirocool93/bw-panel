@@ -1,0 +1,15 @@
+{% extends "admin/base.html" %}
+{% block heading %}Настройки{% endblock %}
+{% block content %}
+<form method="post" action="/admin/settings">
+  <table class="table bg-white"><thead><tr><th>Ключ</th><th>Значение</th><th>Описание</th></tr></thead><tbody>
+  {% for item in items %}
+  <tr><td><input name="key" class="form-control" value="{{ item.key }}"></td><td><input name="value" class="form-control" value="{{ item.value or "" }}"></td><td><input name="description" class="form-control" value="{{ item.description or "" }}"></td></tr>
+  {% endfor %}
+  {% for key in ["site_name","public_base_url","ome_api_url","ome_api_access_token","default_archive_depth_days","default_playback_type","nginx_hls_base_url","telegram_bot_token","telegram_chat_id"] %}
+  <tr><td><input name="key" class="form-control" value="{{ key }}"></td><td><input name="value" class="form-control"></td><td><input name="description" class="form-control"></td></tr>
+  {% endfor %}
+  </tbody></table>
+  <button class="btn btn-primary">Сохранить</button>
+</form>
+{% endblock %}

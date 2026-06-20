@@ -1,0 +1,14 @@
+{% extends "admin/base.html" %}
+{% block heading %}Камеры{% endblock %}
+{% block content %}
+<a class="btn btn-primary mb-3" href="/admin/cameras/new">Добавить камеру</a>
+<table class="table table-hover bg-white"><thead><tr><th>ID</th><th>Название</th><th>Дорожки</th><th>Статус</th><th></th></tr></thead><tbody>
+{% for item in items %}
+<tr><td>{{ item.id }}</td><td>{{ item.title }}</td><td>{% if item.is_scoreboard_camera %}Монитор{% else %}{{ item.lane_from or "" }}-{{ item.lane_to or "" }}{% endif %}</td><td>{{ item.last_status or "unknown" }}</td><td class="text-end">
+  <form method="post" action="/admin/cameras/{{ item.id }}/check" class="d-inline"><button class="btn btn-sm btn-outline-secondary">Проверить</button></form>
+  <a class="btn btn-sm btn-outline-primary" href="/admin/cameras/{{ item.id }}/edit">Изменить</a>
+  <form method="post" action="/admin/cameras/{{ item.id }}/delete" class="d-inline"><button class="btn btn-sm btn-outline-danger">Удалить</button></form>
+</td></tr>
+{% endfor %}
+</tbody></table>
+{% endblock %}

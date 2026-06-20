@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block heading %}{{ "Редактирование турнира" if item else "Новый турнир" }}{% endblock %}
+{% block content %}
+<form method="post" action="/admin/tournaments" class="card card-body form-grid mb-4">
+  <input type="hidden" name="id" value="{{ item.id if item else "" }}">
+  <label>Название<input name="title" class="form-control" value="{{ item.title if item else "" }}" required></label>
+  <label>Slug<input name="slug" class="form-control" value="{{ item.slug if item else "" }}" placeholder="Заполнится автоматически"></label>
+  <label>Начало<input type="datetime-local" name="date_start" class="form-control" value="{{ item.date_start.strftime("%Y-%m-%dT%H:%M") if item and item.date_start else "" }}"></label>
+  <label>Окончание<input type="datetime-local" name="date_end" class="form-control" value="{{ item.date_end.strftime("%Y-%m-%dT%H:%M") if item and item.date_end else "" }}"></label>
+  <label>Статус<select name="status" class="form-select">{% for v in ["draft","active","finished","archived"] %}<option value="{{ v }}" {% if item and item.status.value == v %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+  <label>Доступ<select name="access_mode" class="form-select">{% for v in ["public","token","password"] %}<option value="{{ v }}" {% if item and item.access_mode.value == v %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+  <label>Пароль трансляции<input type="password" name="password" class="form-control" placeholder="Заполните только для смены"></label>
+  <label>Глубина архива, дней<input type="number" name="archive_depth_days" class="form-control" value="{{ item.archive_depth_days if item else 14 }}"></label>
+  <label class="wide">Постер/preview URL<input name="poster_image" class="form-control" value="{{ item.poster_image if item else "" }}"></label>
+  <label class="wide">Описание<textarea name="description" class="form-control" rows="4">{{ item.description if item else "" }}</textarea></label>
+  <label><input type="checkbox" name="is_public" {% if not item or item.is_public %}checked{% endif %}> Публичный</label>
+  <label><input type="checkbox" name="archive_enabled" {% if item and item.archive_enabled %}checked{% endif %}> Архив включен</label>
+  <label><input type="checkbox" name="show_on_homepage" {% if not item or item.show_on_homepage %}checked{% endif %}> На главной</label>
+  <div class="wide"><button class="btn btn-primary">Сохранить</button> <a class="btn btn-link" href="/admin/tournaments">Отмена</a></div>
+</form>
+{% if item %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h2 class="h4 mb-0">Трансляции турнира</h2>
+  <a class="btn btn-outline-primary" href="/admin/tournaments/{{ item.id }}/streams/new">Добавить трансляцию</a>
+</div>
+<table class="table table-hover bg-white"><thead><tr><th>Название</th><th>Источник</th><th>URL</th><th>Статус</th><th></th></tr></thead><tbody>
+{% for stream in streams %}
+<tr><td>{% if stream.is_main %}<span class="badge text-bg-primary">Главная</span>{% endif %} {{ stream.title }}</td><td>{{ stream.source_type.value }}</td><td class="small"><code>{{ stream.playback_url }}</code></td><td>{{ "Вкл" if stream.is_active else "Выкл" }}</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/admin/streams/{{ stream.id }}/edit">Изменить</a> <form method="post" action="/admin/streams/{{ stream.id }}/delete" class="d-inline"><button class="btn btn-sm btn-outline-danger">Удалить</button></form></td></tr>
+{% endfor %}
+</tbody></table>
+{% endif %}
+{% endblock %}

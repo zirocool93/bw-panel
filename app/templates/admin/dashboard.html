@@ -1,0 +1,14 @@
+{% extends "admin/base.html" %}
+{% block heading %}Панель управления{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-4"><div class="metric"><span>Активные турниры</span><strong>{{ stats.active_tournaments }}</strong></div></div>
+  <div class="col-md-4"><div class="metric"><span>Камеры</span><strong>{{ stats.cameras }}</strong></div></div>
+  <div class="col-md-4"><div class="metric"><span>Активные трансляции</span><strong>{{ stats.active_streams }}</strong></div></div>
+</div>
+<div class="card mt-4"><div class="card-body">
+  <h2 class="h5">OvenMediaEngine</h2>
+  {% if stats.ome_ok %}<span class="badge text-bg-success">Доступен</span>{% else %}<span class="badge text-bg-danger">Недоступен</span>{% endif %}
+  <span class="ms-2 text-muted">{{ stats.ome_status }}</span>
+</div></div>
+{% endblock %}

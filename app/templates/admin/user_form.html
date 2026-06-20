@@ -1,0 +1,13 @@
+{% extends "admin/base.html" %}
+{% block heading %}{{ "Редактирование пользователя" if item else "Новый пользователь" }}{% endblock %}
+{% block content %}
+<form method="post" action="/admin/users" class="card card-body form-grid">
+  <input type="hidden" name="id" value="{{ item.id if item else "" }}">
+  <label>Логин<input name="username" class="form-control" value="{{ item.username if item else "" }}" required></label>
+  <label>Email<input type="email" name="email" class="form-control" value="{{ item.email if item else "" }}" required></label>
+  <label>Роль<select name="role" class="form-select">{% for v in ["admin","operator","manager"] %}<option value="{{ v }}" {% if item and item.role.value == v %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+  <label>Пароль<input type="password" name="password" class="form-control" {% if not item %}required{% endif %} placeholder="Заполните для смены"></label>
+  <label><input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}> Активен</label>
+  <div class="wide"><button class="btn btn-primary">Сохранить</button> <a class="btn btn-link" href="/admin/users">Отмена</a></div>
+</form>
+{% endblock %}

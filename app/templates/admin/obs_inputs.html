@@ -1,0 +1,10 @@
+{% extends "admin/base.html" %}
+{% block heading %}OBS-входы{% endblock %}
+{% block content %}
+<a class="btn btn-primary mb-3" href="/admin/obs-inputs/new">Добавить OBS-вход</a>
+<table class="table table-hover bg-white"><thead><tr><th>ID</th><th>Название</th><th>Server URL</th><th>Stream key</th><th></th></tr></thead><tbody>
+{% for item in items %}
+<tr><td>{{ item.id }}</td><td>{{ item.title }}</td><td><code>{{ item.ingest_url }}</code></td><td><code>{{ item.stream_key }}</code></td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/admin/obs-inputs/{{ item.id }}/edit">Изменить</a> <form method="post" action="/admin/obs-inputs/{{ item.id }}/delete" class="d-inline"><button class="btn btn-sm btn-outline-danger">Удалить</button></form></td></tr>
+{% endfor %}
+</tbody></table>
+{% endblock %}

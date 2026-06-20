@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Server version="8">
+  <Name>BowlingPortal</Name>
+  <Type>origin</Type>
+  <IP>*</IP>
+  <Bind>
+    <Providers>
+      <RTMP><Port>1935</Port></RTMP>
+    </Providers>
+    <Publishers>
+      <LLHLS><Port>3333</Port></LLHLS>
+    </Publishers>
+  </Bind>
+  <VirtualHosts>
+    <VirtualHost>
+      <Name>default</Name>
+      <Host><Names><Name>*</Name></Names></Host>
+      <Applications>
+        <Application>
+          <Name>app</Name>
+          <Type>live</Type>
+          <OutputProfiles>
+            <OutputProfile>
+              <Name>passthrough</Name>
+              <OutputStreamName>${OriginStreamName}</OutputStreamName>
+              <Encodes>
+                <Video><Bypass>true</Bypass></Video>
+                <Audio><Bypass>true</Bypass></Audio>
+              </Encodes>
+            </OutputProfile>
+          </OutputProfiles>
+          <Providers><RTMP /></Providers>
+          <Publishers><LLHLS /></Publishers>
+        </Application>
+      </Applications>
+    </VirtualHost>
+  </VirtualHosts>
+</Server>

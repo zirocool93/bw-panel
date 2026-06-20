@@ -1,0 +1,14 @@
+{% if stream and allowed and stream.is_active %}
+<div class="player-box">
+  <video id="video-{{ stream.id }}" class="w-100 rounded" controls muted autoplay playsinline poster="{{ stream.tournament.poster_image if stream.tournament and stream.tournament.poster_image else '' }}"></video>
+  <div id="video-error-{{ stream.id }}" class="alert alert-warning mt-2 d-none">Поток временно недоступен.</div>
+</div>
+<script>
+  window.bowlingPlayers = window.bowlingPlayers || [];
+  window.bowlingPlayers.push({ id: {{ stream.id }}, apiUrl: "/api/streams/{{ stream.id }}/playback-url" });
+</script>
+{% elif stream and not stream.is_active %}
+<div class="alert alert-secondary">Трансляция недоступна.</div>
+{% else %}
+<div class="alert alert-info">Трансляция еще не добавлена.</div>
+{% endif %}

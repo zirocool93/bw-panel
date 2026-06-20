@@ -1,0 +1,8 @@
+{% extends "public/base.html" %}
+{% block title %}{{ stream.title }}{% endblock %}
+{% block content %}
+<a href="/tournaments/{{ tournament.slug }}" class="text-decoration-none">&larr; Вернуться к турниру</a>
+<h1 class="h3 mt-3">{{ stream.title }}</h1>
+<p class="text-muted">{{ stream.description or "" }}</p>
+{% include "components/player.html" %}
+{% endblock %}

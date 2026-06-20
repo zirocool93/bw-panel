@@ -1,0 +1,19 @@
+{% extends "admin/base.html" %}
+{% block heading %}{{ "Редактирование камеры" if item else "Новая камера" }}{% endblock %}
+{% block content %}
+<form method="post" action="/admin/cameras" class="card card-body form-grid">
+  <input type="hidden" name="id" value="{{ item.id if item else "" }}">
+  <label>Название<input name="title" class="form-control" value="{{ item.title if item else "" }}" required></label>
+  <label>Тип<input name="camera_type" class="form-control" value="{{ item.camera_type if item else "hikvision_rtsp" }}"></label>
+  <label class="wide">RTSP URL<input name="rtsp_url" class="form-control" value="{{ item.rtsp_url if item else "" }}" required></label>
+  <label>Логин<input name="rtsp_username" class="form-control" value="{{ item.rtsp_username if item else "" }}"></label>
+  <label>Пароль камеры<input type="password" name="rtsp_password" class="form-control" placeholder="Оставьте пустым, чтобы не менять"></label>
+  <label>Дорожка от<input type="number" name="lane_from" class="form-control" value="{{ item.lane_from if item and item.lane_from else "" }}"></label>
+  <label>Дорожка до<input type="number" name="lane_to" class="form-control" value="{{ item.lane_to if item and item.lane_to else "" }}"></label>
+  <label class="wide">Preview URL<input name="preview_url" class="form-control" value="{{ item.preview_url if item else "" }}"></label>
+  <label class="wide">Описание<textarea name="description" class="form-control">{{ item.description if item else "" }}</textarea></label>
+  <label><input type="checkbox" name="is_scoreboard_camera" {% if item and item.is_scoreboard_camera %}checked{% endif %}> Камера монитора</label>
+  <label><input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}> Активна</label>
+  <div class="wide"><button class="btn btn-primary">Сохранить</button> <a class="btn btn-link" href="/admin/cameras">Отмена</a></div>
+</form>
+{% endblock %}

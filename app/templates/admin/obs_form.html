@@ -1,0 +1,13 @@
+{% extends "admin/base.html" %}
+{% block heading %}{{ "Редактирование OBS-входа" if item else "Новый OBS-вход" }}{% endblock %}
+{% block content %}
+<form method="post" action="/admin/obs-inputs" class="card card-body form-grid">
+  <input type="hidden" name="id" value="{{ item.id if item else "" }}">
+  <label>Название<input name="title" class="form-control" value="{{ item.title if item else "" }}" required></label>
+  <label>Протокол<input name="ingest_protocol" class="form-control" value="{{ item.ingest_protocol if item else "rtmp" }}"></label>
+  <label class="wide">Stream key<input name="stream_key" class="form-control" value="{{ item.stream_key if item else "" }}" placeholder="Сгенерируется автоматически"></label>
+  <label class="wide">Описание<textarea name="description" class="form-control">{{ item.description if item else "" }}</textarea></label>
+  <label><input type="checkbox" name="is_active" {% if not item or item.is_active %}checked{% endif %}> Активен</label>
+  <div class="wide"><button class="btn btn-primary">Сохранить</button> <a class="btn btn-link" href="/admin/obs-inputs">Отмена</a></div>
+</form>
+{% endblock %}

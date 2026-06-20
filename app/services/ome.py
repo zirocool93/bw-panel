@@ -1,0 +1,42 @@
+from secrets import token_urlsafe
+
+import httpx
+
+from app.config import get_settings
+
+
+class OmeService:
+    def __init__(self) -> None:
+        self.settings = get_settings()
+
+    def generate_stream_name(self, prefix: str, entity_id: int | None = None) -> str:
+        suffix = entity_id if entity_id else token_urlsafe(6)
+        return f"{prefix}_{suffix}".replace("-", "_")
+
+    def playback_url(self, app_name: str, stream_name: str, playback_type: str = "hls") -> str:
+        suffix = "llhls.m3u8" if playback_type == "ll_hls" else "playlist.m3u8"
+        base = self.settings.nginx_hls_base_url.rstrip("/")
+        return f"{base}/{app_name}/{stream_name}/{suffix}"
+
+    def obs_ingest_url(self, stream_key: str, protocol: str = "rtmp") -> str:
+        if protocol != "rtmp":
+            return f"{protocol}://TODO-configure-ingest/{stream_key}"
+        return f"{self.settings.ome_rtmp_base_url.rstrip('/')}/{stream_key}"
+
+    async def check_status(self) -> tuple[bool, str]:
+        try:
+            async with httpx.AsyncClient(timeout=3) as client:
+                response = await client.get(self.settings.ome_api_url.rstrip("/"))
+            return response.status_code < 500, f"HTTP {response.status_code}"
+        except Exception as exc:
+            return False, str(exc)
+
+    async def check_stream(self, playback_url: str | None) -> tuple[bool, str]:
+        if not playback_url:
+            return False, "URL не задан"
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                response = await client.get(playback_url)
+            return response.status_code < 400, f"HTTP {response.status_code}"
+        except Exception as exc:
+            return False, str(exc)

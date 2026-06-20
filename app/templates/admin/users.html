@@ -1,0 +1,10 @@
+{% extends "admin/base.html" %}
+{% block heading %}Пользователи{% endblock %}
+{% block content %}
+<a class="btn btn-primary mb-3" href="/admin/users/new">Создать пользователя</a>
+<table class="table table-hover bg-white"><thead><tr><th>ID</th><th>Логин</th><th>Email</th><th>Роль</th><th></th></tr></thead><tbody>
+{% for item in items %}
+<tr><td>{{ item.id }}</td><td>{{ item.username }}</td><td>{{ item.email }}</td><td>{{ item.role.value }}</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/admin/users/{{ item.id }}/edit">Изменить</a> <form method="post" action="/admin/users/{{ item.id }}/delete" class="d-inline"><button class="btn btn-sm btn-outline-danger">Удалить</button></form></td></tr>
+{% endfor %}
+</tbody></table>
+{% endblock %}

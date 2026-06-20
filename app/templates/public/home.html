@@ -1,0 +1,37 @@
+{% extends "public/base.html" %}
+{% block title %}Главная - портал трансляций{% endblock %}
+{% block content %}
+<section class="hero-band mb-4">
+  <div>
+    <p class="text-uppercase text-muted mb-2">Турнирные трансляции</p>
+    <h1>Боулинг-клуб</h1>
+    <p class="lead mb-4">Прямые эфиры турниров, камеры дорожек и архивные записи в одном портале.</p>
+    <a href="/tournaments" class="btn btn-primary btn-lg">Смотреть трансляции</a>
+  </div>
+</section>
+<h2 class="h4 mb-3">Активные турниры</h2>
+<div class="row g-3 mb-4">
+  {% for item in active %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100"><div class="card-body">
+      <span class="badge text-bg-success mb-2">Идет трансляция</span>
+      <h3 class="h5">{{ item.title }}</h3>
+      <p class="text-muted">{{ item.description or "Описание появится позже." }}</p>
+      <a class="btn btn-outline-primary" href="/tournaments/{{ item.slug }}">Открыть</a>
+    </div></div>
+  </div>
+  {% else %}
+  <p class="text-muted">Активных турниров пока нет.</p>
+  {% endfor %}
+</div>
+<h2 class="h4 mb-3">Ближайшие турниры</h2>
+<div class="list-group">
+  {% for item in upcoming %}
+  <a class="list-group-item list-group-item-action d-flex justify-content-between" href="/tournaments/{{ item.slug }}">
+    <span>{{ item.title }}</span><span class="text-muted">{{ item.date_start.strftime("%d.%m.%Y %H:%M") if item.date_start else "Дата уточняется" }}</span>
+  </a>
+  {% else %}
+  <div class="text-muted">Расписание готовится.</div>
+  {% endfor %}
+</div>
+{% endblock %}

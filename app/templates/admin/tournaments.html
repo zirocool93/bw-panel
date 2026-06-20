@@ -1,0 +1,10 @@
+{% extends "admin/base.html" %}
+{% block heading %}Турниры{% endblock %}
+{% block content %}
+<a class="btn btn-primary mb-3" href="/admin/tournaments/new">Создать турнир</a>
+<table class="table table-hover bg-white"><thead><tr><th>ID</th><th>Название</th><th>Статус</th><th>Доступ</th><th></th></tr></thead><tbody>
+{% for item in items %}
+<tr><td>{{ item.id }}</td><td>{{ item.title }}<div class="text-muted small">/{{ item.slug }}</div></td><td><span class="badge text-bg-secondary">{{ item.status.value }}</span></td><td>{{ item.access_mode.value }}</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/admin/tournaments/{{ item.id }}/edit">Изменить</a> <a class="btn btn-sm btn-outline-secondary" href="/tournaments/{{ item.slug }}">Открыть</a> <form method="post" action="/admin/tournaments/{{ item.id }}/delete" class="d-inline"><button class="btn btn-sm btn-outline-danger">Удалить</button></form></td></tr>
+{% endfor %}
+</tbody></table>
+{% endblock %}
