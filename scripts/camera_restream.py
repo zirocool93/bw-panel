@@ -18,21 +18,68 @@ def rtmp_url(stream_name: str) -> str:
 
 
 def build_ffmpeg_command(camera: Camera) -> list[str]:
-    return [
+    transcode = os.getenv("CAMERA_RESTREAM_TRANSCODE", "1") == "1"
+    common = [
         "ffmpeg",
         "-hide_banner",
         "-loglevel",
         "warning",
+        "-fflags",
+        "+genpts",
+        "-use_wallclock_as_timestamps",
+        "1",
         "-rtsp_transport",
         "tcp",
         "-i",
         camera.rtsp_url,
-        "-an",
-        "-c:v",
-        "copy",
+        "-map",
+        "0:v:0",
+    ]
+    output = [
         "-f",
         "flv",
         rtmp_url(camera.ome_stream_name or f"camera_{camera.id}"),
+    ]
+    if not transcode:
+        return [
+            *common,
+            "-an",
+            "-c:v",
+            "copy",
+            "-avoid_negative_ts",
+            "make_zero",
+            *output,
+        ]
+    return [
+        *common,
+        "-an",
+        "-c:v",
+        "libx264",
+        "-preset",
+        os.getenv("CAMERA_RESTREAM_X264_PRESET", "veryfast"),
+        "-tune",
+        "zerolatency",
+        "-profile:v",
+        "main",
+        "-pix_fmt",
+        "yuv420p",
+        "-vf",
+        os.getenv("CAMERA_RESTREAM_VIDEO_FILTER", "scale='min(1920,iw)':-2"),
+        "-r",
+        os.getenv("CAMERA_RESTREAM_FPS", "20"),
+        "-g",
+        os.getenv("CAMERA_RESTREAM_GOP", "40"),
+        "-keyint_min",
+        os.getenv("CAMERA_RESTREAM_GOP", "40"),
+        "-sc_threshold",
+        "0",
+        "-b:v",
+        os.getenv("CAMERA_RESTREAM_VIDEO_BITRATE", "4500k"),
+        "-maxrate",
+        os.getenv("CAMERA_RESTREAM_VIDEO_MAXRATE", "5000k"),
+        "-bufsize",
+        os.getenv("CAMERA_RESTREAM_VIDEO_BUFSIZE", "9000k"),
+        *output,
     ]
 
 

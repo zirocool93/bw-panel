@@ -33,6 +33,9 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://bowling:bowling@postgres:5432/bowling}
       CAMERA_RESTREAM_RTMP_BASE_URL: ${CAMERA_RESTREAM_RTMP_BASE_URL:-rtmp://ovenmediaengine:1935/app}
       CAMERA_RESTREAM_POLL_SECONDS: ${CAMERA_RESTREAM_POLL_SECONDS:-10}
+      CAMERA_RESTREAM_TRANSCODE: ${CAMERA_RESTREAM_TRANSCODE:-1}
+      CAMERA_RESTREAM_VIDEO_FILTER: ${CAMERA_RESTREAM_VIDEO_FILTER:-scale='min(1920,iw)':-2}
+      CAMERA_RESTREAM_VIDEO_BITRATE: ${CAMERA_RESTREAM_VIDEO_BITRATE:-4500k}
     depends_on:
       postgres:
         condition: service_healthy
