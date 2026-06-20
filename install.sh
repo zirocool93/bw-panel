@@ -50,7 +50,9 @@ prompt_admin_credentials() {
 ensure_ome_token() {
   current_ome_token="$(grep -E '^OME_API_ACCESS_TOKEN=' .env | cut -d= -f2- || true)"
   if [ -z "$current_ome_token" ]; then
-    set_env_value OME_API_ACCESS_TOKEN "${OME_API_ACCESS_TOKEN:-ome-access-token}"
+    set_env_value OME_API_ACCESS_TOKEN "${OME_API_ACCESS_TOKEN:-admin:ome-access-token}"
+  elif ! echo "$current_ome_token" | grep -q ":"; then
+    set_env_value OME_API_ACCESS_TOKEN "admin:${current_ome_token}"
   fi
 }
 

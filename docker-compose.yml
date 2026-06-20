@@ -26,6 +26,20 @@ services:
     expose:
       - "8000"
 
+  camera-worker:
+    build: .
+    command: ["python", "-m", "scripts.camera_restream"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://bowling:bowling@postgres:5432/bowling}
+      CAMERA_RESTREAM_RTMP_BASE_URL: ${CAMERA_RESTREAM_RTMP_BASE_URL:-rtmp://ovenmediaengine:1935/app}
+      CAMERA_RESTREAM_POLL_SECONDS: ${CAMERA_RESTREAM_POLL_SECONDS:-10}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ovenmediaengine:
+        condition: service_started
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -56,7 +70,7 @@ services:
     image: airensoft/ovenmediaengine:latest
     environment:
       OME_API_PORT: ${OME_API_PORT:-8081}
-      OME_API_ACCESS_TOKEN: ${OME_API_ACCESS_TOKEN:-ome-access-token}
+      OME_API_ACCESS_TOKEN: ${OME_API_ACCESS_TOKEN:-admin:ome-access-token}
     ports:
       - "${OME_RTMP_PORT:-1935}:1935"
       - "${OME_API_PORT:-8081}:8081"

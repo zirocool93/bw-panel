@@ -48,11 +48,17 @@ class OmeService:
         public_base = urlparse(self.settings.public_base_url)
         host = public_base.hostname or "localhost"
         external_api_url = f"{public_base.scheme or 'http'}://{host}:8081/v1"
+        username = ""
+        password_hint = ""
+        if ":" in self.settings.ome_api_access_token:
+            username, password_hint = self.settings.ome_api_access_token.split(":", 1)
         return {
             "ok": ok,
             "status": status,
             "api_url": self.settings.ome_api_url,
             "external_api_url": external_api_url,
+            "api_username": username,
+            "api_password_hint": password_hint,
             "rtmp_url": self.settings.ome_rtmp_base_url,
             "hls_base_url": self.settings.nginx_hls_base_url,
         }
