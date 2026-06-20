@@ -25,6 +25,13 @@ services:
       - ./media:/opt/bowling-portal/media
     expose:
       - "8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/auth/login >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
 
   camera-worker:
     build: .
@@ -60,8 +67,10 @@ services:
   nginx:
     image: nginx:1.27-alpine
     depends_on:
-      - app
-      - ovenmediaengine
+      app:
+        condition: service_healthy
+      ovenmediaengine:
+        condition: service_started
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
