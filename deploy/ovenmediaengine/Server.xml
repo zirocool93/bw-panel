@@ -4,6 +4,12 @@
   <Type>origin</Type>
   <IP>*</IP>
   <Bind>
+    <Managers>
+      <API>
+        <Port>${env:OME_API_PORT:8081}</Port>
+        <WorkerCount>1</WorkerCount>
+      </API>
+    </Managers>
     <Providers>
       <RTMP><Port>1935</Port></RTMP>
     </Providers>
@@ -11,6 +17,19 @@
       <LLHLS><Port>3333</Port></LLHLS>
     </Publishers>
   </Bind>
+  <Managers>
+    <Host>
+      <Names>
+        <Name>*</Name>
+      </Names>
+    </Host>
+    <API>
+      <AccessToken>${env:OME_API_ACCESS_TOKEN:ome-access-token}</AccessToken>
+      <CrossDomains>
+        <Url>*</Url>
+      </CrossDomains>
+    </API>
+  </Managers>
   <VirtualHosts>
     <VirtualHost>
       <Name>default</Name>

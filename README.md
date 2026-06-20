@@ -44,6 +44,14 @@ OvenMediaEngine устанавливается как сервис `ovenmediaeng
 - проверить playback URL всех трансляций;
 - перегенерировать ingest/playback URL после изменения `.env`.
 
+REST API OME включен на порту `8081` и защищен Basic Auth токеном из `OME_API_ACCESS_TOKEN`. В браузере проверять лучше адрес `http://SERVER_IP:8081/v1`: без корректной авторизации OME может вернуть `401/403`, но это уже означает, что порт и API подняты.
+
+При установке `install.sh` автоматически заменяет `localhost` в `.env` на IP сервера для `PUBLIC_BASE_URL`, `NGINX_HLS_BASE_URL` и `OME_RTMP_BASE_URL`. Если нужно указать адрес вручную:
+
+```bash
+sudo SERVER_IP=10.5.2.43 bash install.sh
+```
+
 ## Обновление
 
 ```bash

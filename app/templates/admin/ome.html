@@ -16,7 +16,8 @@
   <div class="col-lg-8">
     <div class="card h-100"><div class="card-body">
       <h2 class="h5">Настройки подключения</h2>
-      <div class="small mb-1">API: <code>{{ diagnostics.api_url }}</code></div>
+      <div class="small mb-1">API внутри Docker: <code>{{ diagnostics.api_url }}</code></div>
+      <div class="small mb-1">API снаружи: <code>{{ diagnostics.external_api_url }}</code></div>
       <div class="small mb-1">RTMP ingest: <code>{{ diagnostics.rtmp_url }}</code></div>
       <div class="small">HLS base: <code>{{ diagnostics.hls_base_url }}</code></div>
     </div></div>

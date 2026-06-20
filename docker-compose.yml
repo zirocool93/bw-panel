@@ -10,7 +10,7 @@ services:
       NGINX_HLS_BASE_URL: ${NGINX_HLS_BASE_URL:-http://localhost/hls}
       OME_RTMP_BASE_URL: ${OME_RTMP_BASE_URL:-rtmp://localhost:1935/app}
       OME_API_URL: ${OME_API_URL:-http://ovenmediaengine:8081}
-      OME_API_ACCESS_TOKEN: ${OME_API_ACCESS_TOKEN:-}
+      OME_API_ACCESS_TOKEN: ${OME_API_ACCESS_TOKEN:-ome-access-token}
       DEFAULT_ARCHIVE_DEPTH_DAYS: ${DEFAULT_ARCHIVE_DEPTH_DAYS:-14}
       DEFAULT_PLAYBACK_TYPE: ${DEFAULT_PLAYBACK_TYPE:-hls}
       ARCHIVE_ROOT: ${ARCHIVE_ROOT:-/opt/bowling-portal/media/archive}
@@ -54,6 +54,9 @@ services:
 
   ovenmediaengine:
     image: airensoft/ovenmediaengine:latest
+    environment:
+      OME_API_PORT: ${OME_API_PORT:-8081}
+      OME_API_ACCESS_TOKEN: ${OME_API_ACCESS_TOKEN:-ome-access-token}
     ports:
       - "${OME_RTMP_PORT:-1935}:1935"
       - "${OME_API_PORT:-8081}:8081"

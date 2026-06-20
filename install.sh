@@ -44,6 +44,35 @@ prompt_admin_credentials() {
     set_env_value ADMIN_EMAIL "${ADMIN_EMAIL:-admin@example.com}"
     set_env_value ADMIN_PASSWORD "${ADMIN_PASSWORD:-admin12345}"
   fi
+
+}
+
+ensure_ome_token() {
+  current_ome_token="$(grep -E '^OME_API_ACCESS_TOKEN=' .env | cut -d= -f2- || true)"
+  if [ -z "$current_ome_token" ]; then
+    set_env_value OME_API_ACCESS_TOKEN "${OME_API_ACCESS_TOKEN:-ome-access-token}"
+  fi
+}
+
+configure_public_urls() {
+  server_ip="${SERVER_IP:-$(hostname -I | awk '{print $1}')}"
+  if [ -z "$server_ip" ]; then
+    server_ip="127.0.0.1"
+  fi
+
+  current_public_base="$(grep -E '^PUBLIC_BASE_URL=' .env | cut -d= -f2- || true)"
+  current_hls_base="$(grep -E '^NGINX_HLS_BASE_URL=' .env | cut -d= -f2- || true)"
+  current_rtmp_base="$(grep -E '^OME_RTMP_BASE_URL=' .env | cut -d= -f2- || true)"
+
+  if [ -z "$current_public_base" ] || echo "$current_public_base" | grep -q "localhost"; then
+    set_env_value PUBLIC_BASE_URL "http://${server_ip}"
+  fi
+  if [ -z "$current_hls_base" ] || echo "$current_hls_base" | grep -q "localhost"; then
+    set_env_value NGINX_HLS_BASE_URL "http://${server_ip}/hls"
+  fi
+  if [ -z "$current_rtmp_base" ] || echo "$current_rtmp_base" | grep -q "localhost"; then
+    set_env_value OME_RTMP_BASE_URL "rtmp://${server_ip}:1935/app"
+  fi
 }
 
 check_ome() {
@@ -119,6 +148,8 @@ fi
 cd "$TARGET_DIR"
 [ -f .env ] || cp .env.example .env
 prompt_admin_credentials
+ensure_ome_token
+configure_public_urls
 mkdir -p media/archive logs
 docker compose build
 docker compose up -d
