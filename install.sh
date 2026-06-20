@@ -4,6 +4,74 @@ set -euo pipefail
 TARGET_DIR="${TARGET_DIR:-/opt/bowling-portal}"
 REPO_URL="${REPO_URL:-https://github.com/zirocool93/bw-panel.git}"
 
+set_env_value() {
+  key="$1"
+  value="$2"
+  tmp_file="$(mktemp)"
+  awk -v key="$key" -v value="$value" '
+    BEGIN { written = 0 }
+    $0 ~ "^" key "=" { print key "=" value; written = 1; next }
+    { print }
+    END { if (!written) print key "=" value }
+  ' .env > "$tmp_file"
+  mv "$tmp_file" .env
+}
+
+prompt_admin_credentials() {
+  if [ "${ADMIN_PROMPT:-1}" = "0" ]; then
+    return
+  fi
+
+  if [ -t 0 ]; then
+    current_username="$(grep -E '^ADMIN_USERNAME=' .env | cut -d= -f2- || true)"
+    current_email="$(grep -E '^ADMIN_EMAIL=' .env | cut -d= -f2- || true)"
+    current_password="$(grep -E '^ADMIN_PASSWORD=' .env | cut -d= -f2- || true)"
+
+    read -r -p "Логин первого администратора [${current_username:-admin}]: " admin_username
+    read -r -p "Email первого администратора [${current_email:-admin@example.com}]: " admin_email
+    read -r -s -p "Пароль первого администратора [оставить текущий из .env]: " admin_password
+    echo
+
+    admin_username="${admin_username:-${current_username:-admin}}"
+    admin_email="${admin_email:-${current_email:-admin@example.com}}"
+    admin_password="${admin_password:-${current_password:-admin12345}}"
+
+    set_env_value ADMIN_USERNAME "$admin_username"
+    set_env_value ADMIN_EMAIL "$admin_email"
+    set_env_value ADMIN_PASSWORD "$admin_password"
+  else
+    set_env_value ADMIN_USERNAME "${ADMIN_USERNAME:-admin}"
+    set_env_value ADMIN_EMAIL "${ADMIN_EMAIL:-admin@example.com}"
+    set_env_value ADMIN_PASSWORD "${ADMIN_PASSWORD:-admin12345}"
+  fi
+}
+
+check_ome() {
+  echo "Проверка OvenMediaEngine..."
+  if ! docker compose ps ovenmediaengine | grep -qi "running\|up"; then
+    echo "Контейнер OvenMediaEngine не запущен. Проверьте: docker compose logs ovenmediaengine"
+    return 1
+  fi
+
+  if docker compose exec -T app python - <<'PY'
+import asyncio
+from app.services.ome import OmeService
+
+async def main():
+    ok, status = await OmeService().check_status()
+    print(status)
+    raise SystemExit(0 if ok else 1)
+
+asyncio.run(main())
+PY
+  then
+    echo "OvenMediaEngine доступен."
+  else
+    echo "OvenMediaEngine запущен, но API/status endpoint не ответил штатно."
+    echo "Это может быть нормально для текущей конфигурации OME; проверьте логи при проблемах с трансляциями."
+  fi
+}
+
 if [ "$(id -u)" -ne 0 ]; then
   echo "Запустите установку от root: sudo bash install.sh"
   exit 1
@@ -50,11 +118,13 @@ fi
 
 cd "$TARGET_DIR"
 [ -f .env ] || cp .env.example .env
+prompt_admin_credentials
 mkdir -p media/archive logs
 docker compose build
 docker compose up -d
 docker compose exec -T app alembic upgrade head
 docker compose exec -T app python scripts/create_admin.py
+check_ome
 
 echo "Публичный сайт: http://$(hostname -I | awk '{print $1}')/"
 echo "Админка: http://$(hostname -I | awk '{print $1}')/admin"

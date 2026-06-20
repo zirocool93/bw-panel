@@ -25,7 +25,24 @@ curl -fsSL https://raw.githubusercontent.com/zirocool93/bw-panel/main/install.sh
 sudo bash install.sh
 ```
 
-Скрипт проверяет Ubuntu/Debian, ставит Docker, создает `/opt/bowling-portal`, поднимает контейнеры, применяет миграции и создает первого администратора. Для Proxmox LXC обычно нужны включенные `nesting` и `keyctl`.
+Скрипт проверяет Ubuntu/Debian, ставит Docker, создает `/opt/bowling-portal`, спрашивает логин, email и пароль первого администратора, поднимает контейнеры, применяет миграции, создает администратора и проверяет контейнер OvenMediaEngine. Для Proxmox LXC обычно нужны включенные `nesting` и `keyctl`.
+
+Для автоматической установки без вопросов можно передать переменные:
+
+```bash
+sudo ADMIN_PROMPT=0 ADMIN_USERNAME=admin ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD='strong-password' bash install.sh
+```
+
+## OvenMediaEngine
+
+OvenMediaEngine устанавливается как сервис `ovenmediaengine` в `docker-compose.yml`. В админке есть раздел `/admin/ome`, где можно:
+
+- проверить статус OME;
+- увидеть RTMP URL для OBS и HLS base URL;
+- посмотреть stream key для OBS-входов;
+- посмотреть OME stream names для камер;
+- проверить playback URL всех трансляций;
+- перегенерировать ingest/playback URL после изменения `.env`.
 
 ## Обновление
 

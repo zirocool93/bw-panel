@@ -319,3 +319,57 @@ async def settings_save(request: Request, db: Session = Depends(get_db)):
         db.add(item)
     db.commit()
     return redirect("/admin/settings")
+
+
+@router.get("/ome", response_class=HTMLResponse)
+async def ome_page(request: Request, db: Session = Depends(get_db)):
+    service = OmeService()
+    diagnostics = await service.diagnostics()
+    streams = db.query(TournamentStream).order_by(TournamentStream.tournament_id, TournamentStream.sort_order).all()
+    return templates.TemplateResponse(
+        "admin/ome.html",
+        {
+            "request": request,
+            "diagnostics": diagnostics,
+            "streams": streams,
+            "cameras": db.query(Camera).order_by(Camera.id).all(),
+            "obs_inputs": db.query(ObsInput).order_by(ObsInput.id).all(),
+            "check_result": None,
+        },
+    )
+
+
+@router.post("/ome/check-streams", response_class=HTMLResponse)
+async def ome_check_streams(request: Request, db: Session = Depends(get_db)):
+    service = OmeService()
+    diagnostics = await service.diagnostics()
+    streams = db.query(TournamentStream).order_by(TournamentStream.tournament_id, TournamentStream.sort_order).all()
+    results = []
+    for stream in streams:
+        ok, status = await service.check_stream(stream.playback_url)
+        results.append({"stream": stream, "ok": ok, "status": status})
+    return templates.TemplateResponse(
+        "admin/ome.html",
+        {
+            "request": request,
+            "diagnostics": diagnostics,
+            "streams": streams,
+            "cameras": db.query(Camera).order_by(Camera.id).all(),
+            "obs_inputs": db.query(ObsInput).order_by(ObsInput.id).all(),
+            "check_result": results,
+        },
+    )
+
+
+@router.post("/ome/regenerate-urls")
+def ome_regenerate_urls(db: Session = Depends(get_db)):
+    service = OmeService()
+    for obs_input in db.query(ObsInput).all():
+        obs_input.ingest_url = service.obs_ingest_url(obs_input.stream_key, obs_input.ingest_protocol)
+    for stream in db.query(TournamentStream).all():
+        if stream.source_type == SourceType.external:
+            stream.playback_url = stream.external_url
+        elif stream.ome_stream_name:
+            stream.playback_url = service.playback_url(stream.ome_app_name, stream.ome_stream_name, stream.playback_type.value)
+    db.commit()
+    return redirect("/admin/ome")

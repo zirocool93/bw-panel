@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+{% block heading %}OvenMediaEngine{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h5">Статус</h2>
+      {% if diagnostics.ok %}
+        <span class="badge text-bg-success">Доступен</span>
+      {% else %}
+        <span class="badge text-bg-danger">Недоступен</span>
+      {% endif %}
+      <div class="text-muted mt-2">{{ diagnostics.status }}</div>
+    </div></div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h5">Настройки подключения</h2>
+      <div class="small mb-1">API: <code>{{ diagnostics.api_url }}</code></div>
+      <div class="small mb-1">RTMP ingest: <code>{{ diagnostics.rtmp_url }}</code></div>
+      <div class="small">HLS base: <code>{{ diagnostics.hls_base_url }}</code></div>
+    </div></div>
+  </div>
+</div>
+
+<div class="d-flex gap-2 mb-3">
+  <form method="post" action="/admin/ome/check-streams">
+    <button class="btn btn-primary">Проверить playback URL</button>
+  </form>
+  <form method="post" action="/admin/ome/regenerate-urls">
+    <button class="btn btn-outline-primary">Перегенерировать URL</button>
+  </form>
+</div>
+
+{% if check_result %}
+<div class="card mb-4"><div class="card-body">
+  <h2 class="h5">Результаты проверки потоков</h2>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th>Трансляция</th><th>URL</th><th>Результат</th></tr></thead>
+      <tbody>
+      {% for row in check_result %}
+      <tr>
+        <td>{{ row.stream.title }}</td>
+        <td class="small"><code>{{ row.stream.playback_url }}</code></td>
+        <td>{% if row.ok %}<span class="badge text-bg-success">OK</span>{% else %}<span class="badge text-bg-warning">Ошибка</span>{% endif %} {{ row.status }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h5">OBS-входы</h2>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Название</th><th>Server URL</th><th>Stream key</th></tr></thead>
+          <tbody>
+          {% for item in obs_inputs %}
+          <tr><td>{{ item.title }}</td><td><code>{{ item.ingest_url }}</code></td><td><code>{{ item.stream_key }}</code></td></tr>
+          {% else %}
+          <tr><td colspan="3" class="text-muted">OBS-входы еще не добавлены.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div></div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h5">Камеры и имена потоков</h2>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Камера</th><th>OME stream</th><th>Статус</th></tr></thead>
+          <tbody>
+          {% for item in cameras %}
+          <tr><td>{{ item.title }}</td><td><code>{{ item.ome_stream_name }}</code></td><td>{{ item.last_status or "unknown" }}</td></tr>
+          {% else %}
+          <tr><td colspan="3" class="text-muted">Камеры еще не добавлены.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<div class="card mt-3"><div class="card-body">
+  <h2 class="h5">Трансляции портала</h2>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th>Трансляция</th><th>Источник</th><th>OME stream</th><th>Playback URL</th></tr></thead>
+      <tbody>
+      {% for stream in streams %}
+      <tr>
+        <td>{{ stream.title }}</td>
+        <td>{{ stream.source_type.value }}</td>
+        <td><code>{{ stream.ome_stream_name }}</code></td>
+        <td class="small"><code>{{ stream.playback_url }}</code></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-muted">Трансляции еще не добавлены.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% endblock %}

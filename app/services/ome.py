@@ -31,6 +31,16 @@ class OmeService:
         except Exception as exc:
             return False, str(exc)
 
+    async def diagnostics(self) -> dict:
+        ok, status = await self.check_status()
+        return {
+            "ok": ok,
+            "status": status,
+            "api_url": self.settings.ome_api_url,
+            "rtmp_url": self.settings.ome_rtmp_base_url,
+            "hls_base_url": self.settings.nginx_hls_base_url,
+        }
+
     async def check_stream(self, playback_url: str | None) -> tuple[bool, str]:
         if not playback_url:
             return False, "URL не задан"
