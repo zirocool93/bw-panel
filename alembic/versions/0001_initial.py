@@ -7,17 +7,20 @@ Create Date: 2026-06-21
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 revision = "0001_initial"
 down_revision = None
 branch_labels = None
 depends_on = None
 
-user_role = sa.Enum("admin", "operator", "manager", name="userrole")
-tournament_status = sa.Enum("draft", "active", "finished", "archived", name="tournamentstatus")
-access_mode = sa.Enum("public", "token", "password", name="accessmode")
-source_type = sa.Enum("camera", "obs", "external", name="sourcetype")
-playback_type = sa.Enum("hls", "ll_hls", name="playbacktype")
+user_role = postgresql.ENUM("admin", "operator", "manager", name="userrole", create_type=False)
+tournament_status = postgresql.ENUM(
+    "draft", "active", "finished", "archived", name="tournamentstatus", create_type=False
+)
+access_mode = postgresql.ENUM("public", "token", "password", name="accessmode", create_type=False)
+source_type = postgresql.ENUM("camera", "obs", "external", name="sourcetype", create_type=False)
+playback_type = postgresql.ENUM("hls", "ll_hls", name="playbacktype", create_type=False)
 
 
 def upgrade() -> None:
