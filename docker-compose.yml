@@ -23,6 +23,7 @@ services:
         condition: service_healthy
     volumes:
       - ./media:/opt/bowling-portal/media
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     expose:
       - "8000"
     healthcheck:

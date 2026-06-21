@@ -1,0 +1,30 @@
+{% extends "admin/base.html" %}
+{% block heading %}Логи{% endblock %}
+{% block content %}
+<form method="get" action="/admin/logs" class="card card-body mb-3">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Сервис</label>
+      <select name="service" class="form-select">
+        {% for service in services %}
+        <option value="{{ service }}" {% if service == selected_service %}selected{% endif %}>{{ service }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Строк</label>
+      <input type="number" name="lines" class="form-control" min="20" max="1000" value="{{ lines }}">
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-primary">Показать</button>
+      <a class="btn btn-outline-secondary" href="/admin/logs?service={{ selected_service }}&lines={{ lines }}">Обновить</a>
+    </div>
+  </div>
+</form>
+
+{% if error %}
+<div class="alert alert-warning">{{ error }}</div>
+{% endif %}
+
+<pre class="log-view">{{ logs or "Лог пуст." }}</pre>
+{% endblock %}

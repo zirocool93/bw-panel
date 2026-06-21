@@ -1,3 +1,4 @@
+import subprocess
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -29,9 +30,36 @@ from app.services.ome import OmeService
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin_user)])
 templates = Jinja2Templates(directory="app/templates")
 
+LOG_SERVICES = {
+    "app",
+    "nginx",
+    "mediamtx",
+    "mediamtx-configurator",
+    "postgres",
+}
+
 
 def redirect(path: str = "/admin"):
     return RedirectResponse(path, status_code=303)
+
+
+def read_service_logs(service: str, lines: int = 200) -> tuple[str, str | None]:
+    if service not in LOG_SERVICES:
+        return "", "Неизвестный сервис"
+    safe_lines = max(20, min(lines, 1000))
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "logs", "--no-color", f"--tail={safe_lines}", service],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except Exception as exc:
+        return "", str(exc)
+    output = (result.stdout or "") + (result.stderr or "")
+    error = None if result.returncode == 0 else f"docker compose logs завершился с кодом {result.returncode}"
+    return output, error
 
 
 def parse_dt(value: str | None) -> datetime | None:
@@ -330,6 +358,22 @@ async def settings_save(request: Request, db: Session = Depends(get_db)):
     return redirect("/admin/settings")
 
 
+@router.get("/logs", response_class=HTMLResponse)
+def logs_page(request: Request, service: str = "mediamtx", lines: int = 200):
+    logs, error = read_service_logs(service, lines)
+    return templates.TemplateResponse(
+        "admin/logs.html",
+        {
+            "request": request,
+            "services": sorted(LOG_SERVICES),
+            "selected_service": service,
+            "lines": max(20, min(lines, 1000)),
+            "logs": logs,
+            "error": error,
+        },
+    )
+
+
 @router.get("/ome", response_class=HTMLResponse)
 async def ome_page(request: Request, db: Session = Depends(get_db)):
     service = OmeService()
@@ -355,8 +399,13 @@ async def ome_check_streams(request: Request, db: Session = Depends(get_db)):
     streams = db.query(TournamentStream).order_by(TournamentStream.tournament_id, TournamentStream.sort_order).all()
     results = []
     for stream in streams:
-        ok, status = await service.check_stream(stream.playback_url)
-        results.append({"stream": stream, "ok": ok, "status": status})
+        playback_url = (
+            stream.external_url
+            if stream.source_type == SourceType.external
+            else service.browser_playback_url(stream.ome_app_name, stream.ome_stream_name or "", str(request.base_url))
+        )
+        ok, status = await service.check_stream(playback_url)
+        results.append({"stream": stream, "playback_url": playback_url, "ok": ok, "status": status})
     return templates.TemplateResponse(
         "admin/ome.html",
         {

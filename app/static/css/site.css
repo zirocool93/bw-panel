@@ -92,6 +92,18 @@ body {
   grid-column: 1 / -1;
 }
 
+.log-view {
+  min-height: 520px;
+  max-height: 70vh;
+  overflow: auto;
+  background: #0b1020;
+  color: #d6e4ff;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 800px) {
   .admin-shell {
     grid-template-columns: 1fr;

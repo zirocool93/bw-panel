@@ -43,7 +43,7 @@
       {% for row in check_result %}
       <tr>
         <td>{{ row.stream.title }}</td>
-        <td class="small"><code>{{ row.stream.playback_url }}</code></td>
+        <td class="small"><code>{{ row.playback_url }}</code></td>
         <td>{% if row.ok %}<span class="badge text-bg-success">OK</span>{% else %}<span class="badge text-bg-warning">Ошибка</span>{% endif %} {{ row.status }}</td>
       </tr>
       {% endfor %}

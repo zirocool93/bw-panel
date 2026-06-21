@@ -46,6 +46,10 @@ MediaMTX устанавливается как сервис `mediamtx` в `docke
 
 MediaMTX API включен на порту `9997`. Конфиг paths автоматически генерирует сервис `mediamtx-configurator` из камер и OBS-входов в БД. HLS доступен через Nginx по `/hls/{path}/index.m3u8`.
 
+## Логи в админке
+
+Раздел `/admin/logs` показывает хвост логов разрешенных Docker Compose сервисов: `app`, `nginx`, `mediamtx`, `mediamtx-configurator`, `postgres`. Для этого контейнер `app` монтирует Docker socket только на чтение. Доступ к разделу закрыт авторизацией админки.
+
 При установке `install.sh` автоматически заменяет `localhost` в `.env` на IP сервера для `PUBLIC_BASE_URL`, `NGINX_HLS_BASE_URL` и `OME_RTMP_BASE_URL`. Если нужно указать адрес вручную:
 
 ```bash
