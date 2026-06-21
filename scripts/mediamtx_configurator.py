@@ -34,10 +34,33 @@ def camera_source_url(camera: Camera) -> str:
     return urlunsplit((parts.scheme, f"{auth}{parts.netloc}", parts.path, parts.query, parts.fragment))
 
 
+def source_summary(source_url: str) -> str:
+    parts = urlsplit(source_url)
+    netloc = parts.hostname or ""
+    if parts.port:
+        netloc = f"{netloc}:{parts.port}"
+    return urlunsplit((parts.scheme, netloc, parts.path, "", ""))
+
+
 def base_config() -> list[str]:
     return [
         "logLevel: info",
         "logDestinations: [stdout]",
+        "authMethod: internal",
+        "authInternalUsers:",
+        "  - user: any",
+        "    pass:",
+        "    ips: []",
+        "    permissions:",
+        "      - action: publish",
+        "      - action: read",
+        "      - action: playback",
+        "  - user: any",
+        "    pass:",
+        "    ips: ['127.0.0.1', '::1', '10.0.0.0/8', '172.16.0.0/12']",
+        "    permissions:",
+        "      - action: api",
+        "      - action: metrics",
         "api: true",
         "apiAddress: :9997",
         "metrics: true",
@@ -65,14 +88,17 @@ def base_config() -> list[str]:
 
 def load_paths() -> list[str]:
     with SessionLocal() as db:
-        cameras = db.scalars(select(Camera).where(Camera.is_active.is_(True), Camera.ome_stream_name.is_not(None))).all()
-        obs_inputs = db.scalars(select(ObsInput).where(ObsInput.is_active.is_(True), ObsInput.ome_stream_name.is_not(None))).all()
+        cameras = list(db.scalars(select(Camera).where(Camera.is_active.is_(True), Camera.ome_stream_name.is_not(None))).all())
+        obs_inputs = list(db.scalars(select(ObsInput).where(ObsInput.is_active.is_(True), ObsInput.ome_stream_name.is_not(None))).all())
 
         lines = base_config()
+        generated_cameras = 0
         for camera in cameras:
             if not camera.rtsp_url:
+                logger.warning("Камера %s пропущена: RTSP URL не задан", camera.id)
                 continue
             source = camera_source_url(camera)
+            logger.info("Камера %s: path=%s, source=%s", camera.id, camera.ome_stream_name, source_summary(source))
             lines.extend(
                 [
                     f"  {camera.ome_stream_name}:",
@@ -83,6 +109,7 @@ def load_paths() -> list[str]:
                     "    rtspTransport: tcp",
                 ]
             )
+            generated_cameras += 1
         for obs_input in obs_inputs:
             lines.extend(
                 [
@@ -90,6 +117,7 @@ def load_paths() -> list[str]:
                     "    source: publisher",
                 ]
             )
+        logger.info("MediaMTX paths: камер в БД=%s, камер в конфиге=%s, OBS=%s", len(cameras), generated_cameras, len(obs_inputs))
         return lines
 
 

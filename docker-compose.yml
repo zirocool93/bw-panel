@@ -24,6 +24,7 @@ services:
     volumes:
       - ./media:/opt/bowling-portal/media
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./deploy/mediamtx:/mediamtx-config:ro
     expose:
       - "8000"
     healthcheck:
@@ -38,6 +39,7 @@ services:
     build: .
     command: ["python", "-m", "scripts.mediamtx_configurator"]
     environment:
+      PYTHONUNBUFFERED: "1"
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://bowling:bowling@postgres:5432/bowling}
       MEDIAMTX_CONFIG_PATH: /config/mediamtx.yml
       MEDIAMTX_CONFIG_POLL_SECONDS: ${MEDIAMTX_CONFIG_POLL_SECONDS:-10}
@@ -84,7 +86,7 @@ services:
     command: ["/config/mediamtx.yml"]
     ports:
       - "${OME_RTMP_PORT:-1935}:1935"
-      - "${OME_API_PORT:-9997}:9997"
+      - "127.0.0.1:${OME_API_PORT:-9997}:9997"
       - "${OME_RTSP_PORT:-8554}:8554"
       - "${OME_ORIGIN_PORT:-8888}:8888"
     volumes:

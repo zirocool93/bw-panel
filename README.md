@@ -41,10 +41,11 @@ MediaMTX устанавливается как сервис `mediamtx` в `docke
 - увидеть RTMP URL для OBS и HLS base URL;
 - посмотреть stream key для OBS-входов;
 - посмотреть MediaMTX paths для камер;
+- посмотреть текущий `mediamtx.yml`, активные paths, HLS muxers, RTMP-подключения и RTSP-сессии для диагностики 404;
 - проверить playback URL всех трансляций;
 - перегенерировать ingest/playback URL после изменения `.env`.
 
-MediaMTX API включен на порту `9997`. Конфиг paths автоматически генерирует сервис `mediamtx-configurator` из камер и OBS-входов в БД. HLS доступен через Nginx по `/hls/{path}/index.m3u8`.
+MediaMTX API включен на порту `9997` внутри Docker и привязан к `127.0.0.1` на сервере. Конфиг paths автоматически генерирует сервис `mediamtx-configurator` из камер и OBS-входов в БД. HLS доступен через Nginx по `/hls/{path}/index.m3u8`.
 
 ## Логи в админке
 
@@ -99,7 +100,7 @@ sudo docker compose up -d --remove-orphans
 
 - Если сайт отвечает `502 Bad Gateway`, проверьте приложение:
   `docker compose ps app` и `docker compose logs --tail=200 app`.
-- Если HLS не играет, проверьте `NGINX_HLS_BASE_URL`, порт `8888` MediaMTX и наличие активного path.
-- Если камера добавлена, но не играет, проверьте `docker compose logs mediamtx-configurator` и `docker compose logs mediamtx`.
+- Если HLS не играет, проверьте `NGINX_HLS_BASE_URL`, порт `8888` MediaMTX и наличие активного path в `/admin/ome`.
+- Если камера добавлена, но не играет, откройте `/admin/ome`: `camera_1` должен быть в текущем `mediamtx.yml` и в конфигурации paths API. После нажатия «Проверить playback URL» смотрите `active paths`, `HLS muxers` и логи `mediamtx`.
 - Если OBS не подключается, проверьте `OME_RTMP_BASE_URL` и проброс порта `1935`.
 - Если проверка камеры пишет про `ffprobe`, убедитесь, что контейнер пересобран с установленным `ffmpeg`.

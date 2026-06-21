@@ -17,7 +17,7 @@
     <div class="card h-100"><div class="card-body">
       <h2 class="h5">Настройки подключения</h2>
       <div class="small mb-1">API внутри Docker: <code>{{ diagnostics.api_url }}</code></div>
-      <div class="small mb-1">API снаружи: <code>{{ diagnostics.external_api_url }}</code></div>
+      <div class="small mb-1">API на сервере: <code>{{ diagnostics.external_api_url }}</code></div>
       <div class="small mb-1">RTMP ingest: <code>{{ diagnostics.rtmp_url }}</code></div>
       <div class="small">HLS base: <code>{{ diagnostics.hls_base_url }}</code></div>
     </div></div>
@@ -52,6 +52,47 @@
   </div>
 </div></div>
 {% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h5">Активные paths MediaMTX</h2>
+      {% if active_paths_error %}<div class="alert alert-warning">{{ active_paths_error }}</div>{% endif %}
+      <pre class="log-view">{{ active_paths | tojson(indent=2) if active_paths else "Нет данных" }}</pre>
+    </div></div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h5">Конфигурация paths в API</h2>
+      {% if config_paths_error %}<div class="alert alert-warning">{{ config_paths_error }}</div>{% endif %}
+      <pre class="log-view">{{ config_paths | tojson(indent=2) if config_paths else "Нет данных" }}</pre>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-4">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h5">HLS muxers</h2>
+      {% if hls_muxers_error %}<div class="alert alert-warning">{{ hls_muxers_error }}</div>{% endif %}
+      <pre class="log-view">{{ hls_muxers | tojson(indent=2) if hls_muxers else "Нет данных" }}</pre>
+    </div></div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h5">RTMP подключения</h2>
+      {% if rtmp_connections_error %}<div class="alert alert-warning">{{ rtmp_connections_error }}</div>{% endif %}
+      <pre class="log-view">{{ rtmp_connections | tojson(indent=2) if rtmp_connections else "Нет данных" }}</pre>
+    </div></div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h5">RTSP сессии</h2>
+      {% if rtsp_sessions_error %}<div class="alert alert-warning">{{ rtsp_sessions_error }}</div>{% endif %}
+      <pre class="log-view">{{ rtsp_sessions | tojson(indent=2) if rtsp_sessions else "Нет данных" }}</pre>
+    </div></div>
+  </div>
+</div>
 
 <div class="row g-3">
   <div class="col-xl-6">
@@ -109,5 +150,11 @@
       </tbody>
     </table>
   </div>
+</div></div>
+
+<div class="card mt-3"><div class="card-body">
+  <h2 class="h5">Текущий mediamtx.yml</h2>
+  {% if config_error %}<div class="alert alert-warning">{{ config_error }}</div>{% endif %}
+  <pre class="log-view">{{ config_text or "Конфиг недоступен." }}</pre>
 </div></div>
 {% endblock %}

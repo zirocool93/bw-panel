@@ -1,5 +1,6 @@
 from urllib.parse import urlparse
 from secrets import token_urlsafe
+from pathlib import Path
 
 import httpx
 
@@ -60,12 +61,44 @@ class OmeService:
         except Exception as exc:
             return False, str(exc)
 
+    async def api_json(self, path: str) -> tuple[dict | None, str | None]:
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                response = await client.get(f"{self.effective_api_url()}{path}")
+            if response.status_code >= 400:
+                return None, f"HTTP {response.status_code}: {response.text[:500]}"
+            return response.json(), None
+        except Exception as exc:
+            return None, str(exc)
+
+    async def config_paths(self) -> tuple[dict | None, str | None]:
+        return await self.api_json("/v3/config/paths/list")
+
+    async def active_paths(self) -> tuple[dict | None, str | None]:
+        return await self.api_json("/v3/paths/list")
+
+    async def hls_muxers(self) -> tuple[dict | None, str | None]:
+        return await self.api_json("/v3/hlsmuxers/list")
+
+    async def rtmp_connections(self) -> tuple[dict | None, str | None]:
+        return await self.api_json("/v3/rtmpconns/list")
+
+    async def rtsp_sessions(self) -> tuple[dict | None, str | None]:
+        return await self.api_json("/v3/rtspsessions/list")
+
+    def config_text(self) -> tuple[str, str | None]:
+        path = Path("/mediamtx-config/mediamtx.yml")
+        try:
+            return path.read_text(encoding="utf-8"), None
+        except Exception as exc:
+            return "", str(exc)
+
     async def diagnostics(self, request_base_url: str | None = None) -> dict:
         ok, status = await self.check_status()
         public_base = urlparse(request_base_url or self.settings.public_base_url)
         host = public_base.hostname or "localhost"
         scheme = public_base.scheme or "http"
-        external_api_url = f"{scheme}://{host}:9997"
+        external_api_url = "http://127.0.0.1:9997 (только на сервере)"
         external_rtmp_url = self.effective_rtmp_base_url()
         if "localhost" in external_rtmp_url:
             external_rtmp_url = f"rtmp://{host}:1935"
@@ -85,8 +118,11 @@ class OmeService:
         if not playback_url:
             return False, "URL не задан"
         try:
-            async with httpx.AsyncClient(timeout=5) as client:
+            async with httpx.AsyncClient(timeout=25) as client:
                 response = await client.get(playback_url)
-            return response.status_code < 400, f"HTTP {response.status_code}"
+            if response.status_code < 400:
+                return True, f"HTTP {response.status_code}"
+            detail = response.text[:300].strip()
+            return False, f"HTTP {response.status_code}: {detail}"
         except Exception as exc:
             return False, str(exc)

@@ -402,12 +402,30 @@ def logs_page(request: Request, service: str = "mediamtx", lines: int = 200):
 async def ome_page(request: Request, db: Session = Depends(get_db)):
     service = OmeService()
     diagnostics = await service.diagnostics(str(request.base_url))
+    config_text, config_error = service.config_text()
+    config_paths, config_paths_error = await service.config_paths()
+    active_paths, active_paths_error = await service.active_paths()
+    hls_muxers, hls_muxers_error = await service.hls_muxers()
+    rtmp_connections, rtmp_connections_error = await service.rtmp_connections()
+    rtsp_sessions, rtsp_sessions_error = await service.rtsp_sessions()
     streams = db.query(TournamentStream).order_by(TournamentStream.tournament_id, TournamentStream.sort_order).all()
     return templates.TemplateResponse(
         "admin/ome.html",
         {
             "request": request,
             "diagnostics": diagnostics,
+            "config_text": config_text,
+            "config_error": config_error,
+            "config_paths": config_paths,
+            "config_paths_error": config_paths_error,
+            "active_paths": active_paths,
+            "active_paths_error": active_paths_error,
+            "hls_muxers": hls_muxers,
+            "hls_muxers_error": hls_muxers_error,
+            "rtmp_connections": rtmp_connections,
+            "rtmp_connections_error": rtmp_connections_error,
+            "rtsp_sessions": rtsp_sessions,
+            "rtsp_sessions_error": rtsp_sessions_error,
             "streams": streams,
             "cameras": db.query(Camera).order_by(Camera.id).all(),
             "obs_inputs": db.query(ObsInput).order_by(ObsInput.id).all(),
@@ -420,6 +438,12 @@ async def ome_page(request: Request, db: Session = Depends(get_db)):
 async def ome_check_streams(request: Request, db: Session = Depends(get_db)):
     service = OmeService()
     diagnostics = await service.diagnostics(str(request.base_url))
+    config_text, config_error = service.config_text()
+    config_paths, config_paths_error = await service.config_paths()
+    active_paths, active_paths_error = await service.active_paths()
+    hls_muxers, hls_muxers_error = await service.hls_muxers()
+    rtmp_connections, rtmp_connections_error = await service.rtmp_connections()
+    rtsp_sessions, rtsp_sessions_error = await service.rtsp_sessions()
     streams = db.query(TournamentStream).order_by(TournamentStream.tournament_id, TournamentStream.sort_order).all()
     results = []
     for stream in streams:
@@ -435,6 +459,18 @@ async def ome_check_streams(request: Request, db: Session = Depends(get_db)):
         {
             "request": request,
             "diagnostics": diagnostics,
+            "config_text": config_text,
+            "config_error": config_error,
+            "config_paths": config_paths,
+            "config_paths_error": config_paths_error,
+            "active_paths": active_paths,
+            "active_paths_error": active_paths_error,
+            "hls_muxers": hls_muxers,
+            "hls_muxers_error": hls_muxers_error,
+            "rtmp_connections": rtmp_connections,
+            "rtmp_connections_error": rtmp_connections_error,
+            "rtsp_sessions": rtsp_sessions,
+            "rtsp_sessions_error": rtsp_sessions_error,
             "streams": streams,
             "cameras": db.query(Camera).order_by(Camera.id).all(),
             "obs_inputs": db.query(ObsInput).order_by(ObsInput.id).all(),
