@@ -49,7 +49,7 @@ prompt_admin_credentials() {
 
 ensure_media_server_defaults() {
   current_api_url="$(grep -E '^OME_API_URL=' .env | cut -d= -f2- || true)"
-  if [ -z "$current_api_url" ] || echo "$current_api_url" | grep -q "ovenmediaengine"; then
+  if [ -z "$current_api_url" ] || echo "$current_api_url" | grep -Eq "ovenmediaengine|:8081"; then
     set_env_value OME_API_URL "http://mediamtx:9997"
   fi
 }
@@ -70,7 +70,7 @@ configure_public_urls() {
   if [ -z "$current_hls_base" ] || echo "$current_hls_base" | grep -q "localhost"; then
     set_env_value NGINX_HLS_BASE_URL "http://${server_ip}/hls"
   fi
-  if [ -z "$current_rtmp_base" ] || echo "$current_rtmp_base" | grep -q "localhost"; then
+  if [ -z "$current_rtmp_base" ] || echo "$current_rtmp_base" | grep -Eq "localhost|/app$"; then
     set_env_value OME_RTMP_BASE_URL "rtmp://${server_ip}:1935"
   fi
 }

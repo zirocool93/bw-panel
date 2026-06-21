@@ -333,7 +333,7 @@ async def settings_save(request: Request, db: Session = Depends(get_db)):
 @router.get("/ome", response_class=HTMLResponse)
 async def ome_page(request: Request, db: Session = Depends(get_db)):
     service = OmeService()
-    diagnostics = await service.diagnostics()
+    diagnostics = await service.diagnostics(str(request.base_url))
     streams = db.query(TournamentStream).order_by(TournamentStream.tournament_id, TournamentStream.sort_order).all()
     return templates.TemplateResponse(
         "admin/ome.html",
@@ -351,7 +351,7 @@ async def ome_page(request: Request, db: Session = Depends(get_db)):
 @router.post("/ome/check-streams", response_class=HTMLResponse)
 async def ome_check_streams(request: Request, db: Session = Depends(get_db)):
     service = OmeService()
-    diagnostics = await service.diagnostics()
+    diagnostics = await service.diagnostics(str(request.base_url))
     streams = db.query(TournamentStream).order_by(TournamentStream.tournament_id, TournamentStream.sort_order).all()
     results = []
     for stream in streams:

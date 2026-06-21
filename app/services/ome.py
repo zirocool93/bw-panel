@@ -19,8 +19,26 @@ class OmeService:
         suffix = entity_id if entity_id else token_urlsafe(6)
         return f"{prefix}_{suffix}".replace("-", "_")
 
+    def effective_api_url(self) -> str:
+        configured = self.settings.ome_api_url.rstrip("/")
+        if "ovenmediaengine" in configured or configured.endswith(":8081"):
+            return "http://mediamtx:9997"
+        return configured
+
+    def effective_hls_base_url(self) -> str:
+        configured = self.settings.nginx_hls_base_url.rstrip("/")
+        if "localhost" in configured:
+            return "/hls"
+        return configured
+
+    def effective_rtmp_base_url(self) -> str:
+        configured = self.settings.ome_rtmp_base_url.rstrip("/")
+        if configured.endswith("/app"):
+            configured = configured.removesuffix("/app")
+        return configured
+
     def playback_url(self, app_name: str, stream_name: str, playback_type: str = "hls", base_url: str | None = None) -> str:
-        base = (base_url or self.settings.nginx_hls_base_url).rstrip("/")
+        base = (base_url or self.effective_hls_base_url()).rstrip("/")
         return f"{base}/{stream_name}/index.m3u8"
 
     def browser_playback_url(self, app_name: str, stream_name: str, request_base_url: str) -> str:
@@ -30,30 +48,37 @@ class OmeService:
     def obs_ingest_url(self, stream_key: str, protocol: str = "rtmp") -> str:
         if protocol != "rtmp":
             return f"{protocol}://TODO-configure-ingest/{stream_key}"
-        return f"{self.settings.ome_rtmp_base_url.rstrip('/')}/{stream_key}"
+        return f"{self.effective_rtmp_base_url()}/{stream_key}"
 
     async def check_status(self) -> tuple[bool, str]:
         try:
             async with httpx.AsyncClient(timeout=3) as client:
-                response = await client.get(f"{self.settings.ome_api_url.rstrip('/')}/v3/config/global/get")
+                response = await client.get(f"{self.effective_api_url()}/v3/config/global/get")
             if response.status_code in {200, 401, 403, 404}:
                 return True, f"MediaMTX API доступен, HTTP {response.status_code}"
             return response.status_code < 500, f"HTTP {response.status_code}"
         except Exception as exc:
             return False, str(exc)
 
-    async def diagnostics(self) -> dict:
+    async def diagnostics(self, request_base_url: str | None = None) -> dict:
         ok, status = await self.check_status()
-        public_base = urlparse(self.settings.public_base_url)
+        public_base = urlparse(request_base_url or self.settings.public_base_url)
         host = public_base.hostname or "localhost"
-        external_api_url = f"{public_base.scheme or 'http'}://{host}:9997"
+        scheme = public_base.scheme or "http"
+        external_api_url = f"{scheme}://{host}:9997"
+        external_rtmp_url = self.effective_rtmp_base_url()
+        if "localhost" in external_rtmp_url:
+            external_rtmp_url = f"rtmp://{host}:1935"
+        hls_base_url = self.effective_hls_base_url()
+        if hls_base_url.startswith("/"):
+            hls_base_url = f"{scheme}://{host}{hls_base_url}"
         return {
             "ok": ok,
             "status": status,
-            "api_url": self.settings.ome_api_url,
+            "api_url": self.effective_api_url(),
             "external_api_url": external_api_url,
-            "rtmp_url": self.settings.ome_rtmp_base_url,
-            "hls_base_url": self.settings.nginx_hls_base_url,
+            "rtmp_url": external_rtmp_url,
+            "hls_base_url": hls_base_url,
         }
 
     async def check_stream(self, playback_url: str | None) -> tuple[bool, str]:
