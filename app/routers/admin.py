@@ -1,4 +1,5 @@
 import subprocess
+import shutil
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -47,9 +48,12 @@ def read_service_logs(service: str, lines: int = 200) -> tuple[str, str | None]:
     if service not in LOG_SERVICES:
         return "", "Неизвестный сервис"
     safe_lines = max(20, min(lines, 1000))
+    docker_bin = shutil.which("docker")
+    if not docker_bin:
+        return "", "Docker CLI не найден в контейнере app. Пересоберите app: docker compose build app && docker compose up -d --force-recreate app"
     try:
         result = subprocess.run(
-            ["docker", "compose", "logs", "--no-color", f"--tail={safe_lines}", service],
+            [docker_bin, "compose", "logs", "--no-color", f"--tail={safe_lines}", service],
             capture_output=True,
             text=True,
             timeout=10,
