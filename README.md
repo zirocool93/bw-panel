@@ -45,7 +45,7 @@ MediaMTX устанавливается как сервис `mediamtx` в `docke
 - проверить playback URL всех трансляций;
 - перегенерировать ingest/playback URL после изменения `.env`.
 
-MediaMTX API включен на порту `9997` внутри Docker и привязан к `127.0.0.1` на сервере. Конфиг paths автоматически генерирует сервис `mediamtx-configurator` из камер и OBS-входов в БД. HLS доступен через Nginx по `/hls/{path}/index.m3u8`.
+MediaMTX API включен на порту `9997` внутри Docker и привязан к `127.0.0.1` на сервере. Конфиг paths автоматически генерирует сервис `mediamtx-configurator` из камер и OBS-входов в БД. HLS доступен через Nginx по `/hls/{path}/index.m3u8`. По умолчанию используется обычный MPEG-TS HLS, а не LL-HLS, чтобы избежать cookie-redirect проблем за reverse proxy.
 
 ## Логи в админке
 
