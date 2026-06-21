@@ -39,6 +39,14 @@ LOG_SERVICES = {
     "postgres",
 }
 
+LOG_CONTAINERS = {
+    "app": "bowling-portal-app-1",
+    "nginx": "bowling-portal-nginx-1",
+    "mediamtx": "bowling-portal-mediamtx-1",
+    "mediamtx-configurator": "bowling-portal-mediamtx-configurator-1",
+    "postgres": "bowling-portal-postgres-1",
+}
+
 
 def redirect(path: str = "/admin"):
     return RedirectResponse(path, status_code=303)
@@ -53,7 +61,7 @@ def read_service_logs(service: str, lines: int = 200) -> tuple[str, str | None]:
         return "", "Docker CLI не найден в контейнере app. Пересоберите app: docker compose build app && docker compose up -d --force-recreate app"
     try:
         result = subprocess.run(
-            [docker_bin, "compose", "logs", "--no-color", f"--tail={safe_lines}", service],
+            [docker_bin, "compose", "logs", f"--tail={safe_lines}", service],
             capture_output=True,
             text=True,
             timeout=10,
@@ -61,8 +69,20 @@ def read_service_logs(service: str, lines: int = 200) -> tuple[str, str | None]:
         )
     except Exception as exc:
         return "", str(exc)
+    if result.returncode != 0:
+        container = LOG_CONTAINERS[service]
+        try:
+            result = subprocess.run(
+                [docker_bin, "logs", f"--tail={safe_lines}", container],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+        except Exception as exc:
+            return "", str(exc)
     output = (result.stdout or "") + (result.stderr or "")
-    error = None if result.returncode == 0 else f"docker compose logs завершился с кодом {result.returncode}"
+    error = None if result.returncode == 0 else f"docker logs завершился с кодом {result.returncode}"
     return output, error
 
 
