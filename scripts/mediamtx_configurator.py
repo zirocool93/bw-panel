@@ -42,6 +42,12 @@ def source_summary(source_url: str) -> str:
     return urlunsplit((parts.scheme, netloc, parts.path, "", ""))
 
 
+def camera_transport(camera: Camera) -> str:
+    if camera.rtsp_transport in {"tcp", "udp"}:
+        return camera.rtsp_transport
+    return "tcp"
+
+
 def base_config() -> list[str]:
     return [
         "logLevel: info",
@@ -98,7 +104,14 @@ def load_paths() -> list[str]:
                 logger.warning("Камера %s пропущена: RTSP URL не задан", camera.id)
                 continue
             source = camera_source_url(camera)
-            logger.info("Камера %s: path=%s, source=%s", camera.id, camera.ome_stream_name, source_summary(source))
+            transport = camera_transport(camera)
+            logger.info(
+                "Камера %s: path=%s, source=%s, transport=%s",
+                camera.id,
+                camera.ome_stream_name,
+                source_summary(source),
+                transport,
+            )
             lines.extend(
                 [
                     f"  {camera.ome_stream_name}:",
@@ -106,7 +119,7 @@ def load_paths() -> list[str]:
                     "    sourceOnDemand: true",
                     "    sourceOnDemandStartTimeout: 20s",
                     "    sourceOnDemandCloseAfter: 10s",
-                    f"    rtspTransport: {camera.rtsp_transport or 'automatic'}",
+                    f"    rtspTransport: {transport}",
                 ]
             )
             generated_cameras += 1

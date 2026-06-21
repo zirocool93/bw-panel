@@ -7,7 +7,7 @@
   <label>Тип<input name="camera_type" class="form-control" value="{{ item.camera_type if item else "generic_rtsp" }}"></label>
   <label>RTSP transport<select name="rtsp_transport" class="form-select">
     {% set transport = item.rtsp_transport if item and item.rtsp_transport else "automatic" %}
-    {% for value, label in [("automatic", "Авто"), ("tcp", "TCP"), ("udp", "UDP")] %}
+    {% for value, label in [("automatic", "Авто (TCP)"), ("tcp", "TCP"), ("udp", "UDP")] %}
       <option value="{{ value }}" {% if transport == value %}selected{% endif %}>{{ label }}</option>
     {% endfor %}
   </select></label>
