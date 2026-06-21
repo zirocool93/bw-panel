@@ -47,8 +47,7 @@ fi
 [ -f .env ] || cp .env.example .env
 migrate_media_env
 docker compose build
-docker compose up -d --remove-orphans
-docker compose restart nginx
+docker compose up -d --remove-orphans --force-recreate app mediamtx-configurator mediamtx nginx
 docker compose exec -T app alembic upgrade head
 docker image prune -f
 docker compose ps

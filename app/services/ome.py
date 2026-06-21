@@ -53,17 +53,19 @@ class OmeService:
 
     async def check_status(self) -> tuple[bool, str]:
         try:
-            async with httpx.AsyncClient(timeout=3) as client:
+            async with httpx.AsyncClient(timeout=3, follow_redirects=True) as client:
                 response = await client.get(f"{self.effective_api_url()}/v3/config/global/get")
-            if response.status_code in {200, 401, 403, 404}:
-                return True, f"MediaMTX API доступен, HTTP {response.status_code}"
-            return response.status_code < 500, f"HTTP {response.status_code}"
+            if response.status_code == 200:
+                return True, "MediaMTX API доступен"
+            if response.status_code in {401, 403}:
+                return False, f"MediaMTX API отвечает HTTP {response.status_code}, но доступ из панели не разрешен"
+            return response.status_code < 500, f"MediaMTX API HTTP {response.status_code}"
         except Exception as exc:
             return False, str(exc)
 
     async def api_json(self, path: str) -> tuple[dict | None, str | None]:
         try:
-            async with httpx.AsyncClient(timeout=5) as client:
+            async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
                 response = await client.get(f"{self.effective_api_url()}{path}")
             if response.status_code >= 400:
                 return None, f"HTTP {response.status_code}: {response.text[:500]}"
@@ -118,11 +120,15 @@ class OmeService:
         if not playback_url:
             return False, "URL не задан"
         try:
-            async with httpx.AsyncClient(timeout=25) as client:
+            async with httpx.AsyncClient(timeout=25, follow_redirects=True) as client:
                 response = await client.get(playback_url)
-            if response.status_code < 400:
-                return True, f"HTTP {response.status_code}"
+            final_url = str(response.url)
+            body = response.text[:300].strip()
+            if response.status_code == 200 and "#EXTM3U" in body:
+                return True, f"HTTP 200, HLS playlist получен: {final_url}"
             detail = response.text[:300].strip()
+            if final_url != playback_url:
+                return False, f"HTTP {response.status_code} после редиректа на {final_url}: {detail}"
             return False, f"HTTP {response.status_code}: {detail}"
         except Exception as exc:
             return False, str(exc)
