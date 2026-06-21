@@ -82,7 +82,7 @@ sudo docker compose up -d --remove-orphans
 
 ## Рабочий процесс
 
-1. В админке добавьте камеры с RTSP URL. Пароль камеры после сохранения не показывается в форме. Сервис `mediamtx-configurator` автоматически добавит активные камеры в paths MediaMTX.
+1. В админке добавьте камеры с RTSP URL. Система передает RTSP URL в MediaMTX как есть и подходит для любых камер/регистраторов, которые отдают стандартный RTSP-поток. Для каждой камеры можно выбрать RTSP transport: `Авто`, `TCP` или `UDP`. Пароль камеры после сохранения не показывается в форме. Сервис `mediamtx-configurator` автоматически добавит активные камеры в paths MediaMTX.
 2. Добавьте OBS-вход. Админка покажет server URL и stream key для OBS.
 3. Создайте турнир, выберите статус, публичность и режим доступа.
 4. В карточке турнира добавьте трансляции: камера, OBS или внешний HLS.
@@ -102,6 +102,6 @@ sudo docker compose up -d --remove-orphans
   `docker compose ps app` и `docker compose logs --tail=200 app`.
 - Если HLS не играет, проверьте `NGINX_HLS_BASE_URL`, порт `8888` MediaMTX и наличие активного path в `/admin/ome`.
 - Если камера добавлена, но не играет, откройте `/admin/ome`: `camera_1` должен быть в текущем `mediamtx.yml` и в конфигурации paths API. После нажатия «Проверить playback URL» смотрите `active paths`, `HLS muxers` и логи `mediamtx`.
-- Если в диагнозе MediaMTX у path `ready=нет`, `available=нет`, `tracks=0`, MediaMTX не получил видеодорожку от RTSP-камеры. Проверьте RTSP URL из контейнера `app`, логин/пароль, доступность сети до камеры и кодек камеры. Для Hikvision чаще нужен путь `/Streaming/Channels/101`, а не `/ISAPI/Streaming/Channels/101`.
+- Если в диагнозе MediaMTX у path `ready=нет`, `available=нет`, `tracks=0`, MediaMTX не получил видеодорожку от RTSP-камеры. Проверьте RTSP URL из контейнера `app`, логин/пароль, доступность сети до камеры, выбранный RTSP transport и кодек камеры. Для некоторых Hikvision чаще нужен путь `/Streaming/Channels/101`, но система не переписывает URL автоматически и может работать с любым корректным RTSP URL.
 - Если OBS не подключается, проверьте `OME_RTMP_BASE_URL` и проброс порта `1935`.
 - Если проверка камеры пишет про `ffprobe`, убедитесь, что контейнер пересобран с установленным `ffmpeg`.

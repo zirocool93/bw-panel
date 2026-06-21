@@ -106,7 +106,7 @@ def load_paths() -> list[str]:
                     "    sourceOnDemand: true",
                     "    sourceOnDemandStartTimeout: 20s",
                     "    sourceOnDemandCloseAfter: 10s",
-                    "    rtspTransport: tcp",
+                    f"    rtspTransport: {camera.rtsp_transport or 'automatic'}",
                 ]
             )
             generated_cameras += 1

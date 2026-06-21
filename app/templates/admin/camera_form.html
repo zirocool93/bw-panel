@@ -4,7 +4,13 @@
 <form method="post" action="/admin/cameras" class="card card-body form-grid">
   <input type="hidden" name="id" value="{{ item.id if item else "" }}">
   <label>Название<input name="title" class="form-control" value="{{ item.title if item else "" }}" required></label>
-  <label>Тип<input name="camera_type" class="form-control" value="{{ item.camera_type if item else "hikvision_rtsp" }}"></label>
+  <label>Тип<input name="camera_type" class="form-control" value="{{ item.camera_type if item else "generic_rtsp" }}"></label>
+  <label>RTSP transport<select name="rtsp_transport" class="form-select">
+    {% set transport = item.rtsp_transport if item and item.rtsp_transport else "automatic" %}
+    {% for value, label in [("automatic", "Авто"), ("tcp", "TCP"), ("udp", "UDP")] %}
+      <option value="{{ value }}" {% if transport == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select></label>
   <label class="wide">RTSP URL<input name="rtsp_url" class="form-control" value="{{ item.rtsp_url if item else "" }}" required></label>
   <label>Логин<input name="rtsp_username" class="form-control" value="{{ item.rtsp_username if item else "" }}"></label>
   <label>Пароль камеры<input type="password" name="rtsp_password" class="form-control" placeholder="Оставьте пустым, чтобы не менять"></label>

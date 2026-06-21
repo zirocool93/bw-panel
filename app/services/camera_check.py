@@ -17,24 +17,29 @@ def rtsp_url_hint(rtsp_url: str) -> str:
     return f" Проверьте RTSP URL: для Hikvision обычно нужен {corrected}"
 
 
-def check_rtsp_url(rtsp_url: str) -> tuple[bool, str]:
+def check_rtsp_url(rtsp_url: str, rtsp_transport: str = "automatic") -> tuple[bool, str]:
     if not shutil.which("ffprobe"):
         return False, "ffprobe не установлен в контейнере app"
+    command = [
+        "ffprobe",
+        "-v",
+        "error",
+    ]
+    if rtsp_transport in {"tcp", "udp"}:
+        command.extend(["-rtsp_transport", rtsp_transport])
+    command.extend(
+        [
+            "-i",
+            rtsp_url,
+            "-show_entries",
+            "stream=index,codec_type,codec_name,width,height",
+            "-of",
+            "compact=p=0:nk=0",
+        ]
+    )
     try:
         result = subprocess.run(
-            [
-                "ffprobe",
-                "-v",
-                "error",
-                "-rtsp_transport",
-                "tcp",
-                "-i",
-                rtsp_url,
-                "-show_entries",
-                "stream=index,codec_type,codec_name,width,height",
-                "-of",
-                "compact=p=0:nk=0",
-            ],
+            command,
             capture_output=True,
             text=True,
             timeout=15,
@@ -49,8 +54,8 @@ def check_rtsp_url(rtsp_url: str) -> tuple[bool, str]:
 
 
 def update_camera_status(db: Session, camera: Camera) -> Camera:
-    ok, message = check_rtsp_url(camera.rtsp_url)
-    camera.last_status = message[:240] if ok else message[:240]
+    ok, message = check_rtsp_url(camera.rtsp_url, camera.rtsp_transport)
+    camera.last_status = message
     camera.last_checked_at = datetime.now(UTC)
     db.commit()
     db.refresh(camera)

@@ -126,9 +126,10 @@ async def camera_save(request: Request, db: Session = Depends(get_db)):
     item = db.get(Camera, int(form["id"])) if form.get("id") else Camera()
     item.title = str(form["title"])
     item.description = str(form.get("description") or "")
-    item.camera_type = str(form.get("camera_type") or "hikvision_rtsp")
+    item.camera_type = str(form.get("camera_type") or "generic_rtsp")
     item.rtsp_url = str(form["rtsp_url"])
     item.rtsp_username = str(form.get("rtsp_username") or "")
+    item.rtsp_transport = str(form.get("rtsp_transport") or "automatic")
     if form.get("rtsp_password"):
         item.rtsp_password = str(form["rtsp_password"])
     item.lane_from = int(form["lane_from"]) if form.get("lane_from") else None
