@@ -67,7 +67,7 @@ def base_config() -> list[str]:
         "metricsAddress: :9998",
         "rtsp: true",
         "rtspAddress: :8554",
-        "rtspTransports: [tcp]",
+        "rtspTransports: [udp, tcp]",
         "rtmp: true",
         "rtmpAddress: :1935",
         "hls: true",
