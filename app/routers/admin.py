@@ -405,6 +405,7 @@ async def ome_page(request: Request, db: Session = Depends(get_db)):
     config_text, config_error = service.config_text()
     config_paths, config_paths_error = await service.config_paths()
     active_paths, active_paths_error = await service.active_paths()
+    path_diagnostics = service.path_diagnostics(active_paths)
     hls_muxers, hls_muxers_error = await service.hls_muxers()
     rtmp_connections, rtmp_connections_error = await service.rtmp_connections()
     rtsp_sessions, rtsp_sessions_error = await service.rtsp_sessions()
@@ -420,6 +421,7 @@ async def ome_page(request: Request, db: Session = Depends(get_db)):
             "config_paths_error": config_paths_error,
             "active_paths": active_paths,
             "active_paths_error": active_paths_error,
+            "path_diagnostics": path_diagnostics,
             "hls_muxers": hls_muxers,
             "hls_muxers_error": hls_muxers_error,
             "rtmp_connections": rtmp_connections,
@@ -441,6 +443,7 @@ async def ome_check_streams(request: Request, db: Session = Depends(get_db)):
     config_text, config_error = service.config_text()
     config_paths, config_paths_error = await service.config_paths()
     active_paths, active_paths_error = await service.active_paths()
+    path_diagnostics = service.path_diagnostics(active_paths)
     hls_muxers, hls_muxers_error = await service.hls_muxers()
     rtmp_connections, rtmp_connections_error = await service.rtmp_connections()
     rtsp_sessions, rtsp_sessions_error = await service.rtsp_sessions()
@@ -465,6 +468,7 @@ async def ome_check_streams(request: Request, db: Session = Depends(get_db)):
             "config_paths_error": config_paths_error,
             "active_paths": active_paths,
             "active_paths_error": active_paths_error,
+            "path_diagnostics": path_diagnostics,
             "hls_muxers": hls_muxers,
             "hls_muxers_error": hls_muxers_error,
             "rtmp_connections": rtmp_connections,

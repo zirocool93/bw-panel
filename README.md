@@ -102,5 +102,6 @@ sudo docker compose up -d --remove-orphans
   `docker compose ps app` и `docker compose logs --tail=200 app`.
 - Если HLS не играет, проверьте `NGINX_HLS_BASE_URL`, порт `8888` MediaMTX и наличие активного path в `/admin/ome`.
 - Если камера добавлена, но не играет, откройте `/admin/ome`: `camera_1` должен быть в текущем `mediamtx.yml` и в конфигурации paths API. После нажатия «Проверить playback URL» смотрите `active paths`, `HLS muxers` и логи `mediamtx`.
+- Если в диагнозе MediaMTX у path `ready=нет`, `available=нет`, `tracks=0`, MediaMTX не получил видеодорожку от RTSP-камеры. Проверьте RTSP URL из контейнера `app`, логин/пароль, доступность сети до камеры и кодек камеры. Для Hikvision чаще нужен путь `/Streaming/Channels/101`, а не `/ISAPI/Streaming/Channels/101`.
 - Если OBS не подключается, проверьте `OME_RTMP_BASE_URL` и проброс порта `1935`.
 - Если проверка камеры пишет про `ffprobe`, убедитесь, что контейнер пересобран с установленным `ffmpeg`.

@@ -53,6 +53,28 @@
 </div></div>
 {% endif %}
 
+{% if path_diagnostics %}
+<div class="card mb-3"><div class="card-body">
+  <h2 class="h5">Диагноз MediaMTX</h2>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th>Path</th><th>Готов</th><th>Доступен</th><th>Tracks</th><th>Статус</th></tr></thead>
+      <tbody>
+      {% for item in path_diagnostics %}
+      <tr>
+        <td><code>{{ item.name }}</code></td>
+        <td>{{ "да" if item.ready else "нет" }}</td>
+        <td>{{ "да" if item.available else "нет" }}</td>
+        <td>{{ item.tracks }}</td>
+        <td><span class="badge text-bg-{{ item.level }}">{{ item.status }}</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+{% endif %}
+
 <div class="row g-3 mb-3">
   <div class="col-xl-6">
     <div class="card h-100"><div class="card-body">

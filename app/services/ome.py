@@ -1,10 +1,49 @@
-from urllib.parse import urlparse
+import re
+from urllib.parse import urlparse, urlsplit, urlunsplit
 from secrets import token_urlsafe
 from pathlib import Path
 
 import httpx
 
 from app.config import get_settings
+
+
+def redact_url_credentials(value: str) -> str:
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        return value
+    if not parts.scheme or "@" not in parts.netloc:
+        return value
+    host = parts.hostname or ""
+    if parts.port:
+        host = f"{host}:{parts.port}"
+    username = parts.username or ""
+    auth = f"{username}:***@" if username else "***@"
+    return urlunsplit((parts.scheme, f"{auth}{host}", parts.path, parts.query, parts.fragment))
+
+
+def redact_sensitive(value):
+    if isinstance(value, dict):
+        result = {}
+        for key, item in value.items():
+            if key.lower() in {"password", "pass", "rtsp_password"}:
+                result[key] = "***"
+            elif isinstance(item, str):
+                result[key] = redact_url_credentials(item)
+            else:
+                result[key] = redact_sensitive(item)
+        return result
+    if isinstance(value, list):
+        return [redact_sensitive(item) for item in value]
+    if isinstance(value, str):
+        return redact_url_credentials(value)
+    return value
+
+
+def redact_config_text(value: str) -> str:
+    redacted = re.sub(r"(rtsp://[^:\s/@]+):([^@\s]+)@", r"\1:***@", value)
+    return re.sub(r"(pass:\s*).+", r"\1***", redacted)
 
 
 class OmeService:
@@ -69,7 +108,7 @@ class OmeService:
                 response = await client.get(f"{self.effective_api_url()}{path}")
             if response.status_code >= 400:
                 return None, f"HTTP {response.status_code}: {response.text[:500]}"
-            return response.json(), None
+            return redact_sensitive(response.json()), None
         except Exception as exc:
             return None, str(exc)
 
@@ -88,10 +127,38 @@ class OmeService:
     async def rtsp_sessions(self) -> tuple[dict | None, str | None]:
         return await self.api_json("/v3/rtspsessions/list")
 
+    def path_diagnostics(self, active_paths: dict | None) -> list[dict]:
+        result = []
+        for item in (active_paths or {}).get("items", []):
+            name = item.get("name") or "unknown"
+            ready = bool(item.get("ready"))
+            available = bool(item.get("available"))
+            tracks = item.get("tracks") or item.get("tracks2") or []
+            if ready and tracks:
+                status = "Готов к воспроизведению"
+                level = "success"
+            elif item.get("online") and not tracks:
+                status = "Path создан, но MediaMTX не получил видеодорожки с RTSP-источника"
+                level = "warning"
+            else:
+                status = "Path не активен"
+                level = "danger"
+            result.append(
+                {
+                    "name": name,
+                    "ready": ready,
+                    "available": available,
+                    "tracks": len(tracks),
+                    "status": status,
+                    "level": level,
+                }
+            )
+        return result
+
     def config_text(self) -> tuple[str, str | None]:
         path = Path("/mediamtx-config/mediamtx.yml")
         try:
-            return path.read_text(encoding="utf-8"), None
+            return redact_config_text(path.read_text(encoding="utf-8")), None
         except Exception as exc:
             return "", str(exc)
 
