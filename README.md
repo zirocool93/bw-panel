@@ -101,6 +101,7 @@ sudo docker compose up -d --remove-orphans
 - Если сайт отвечает `502 Bad Gateway`, проверьте приложение:
   `docker compose ps app` и `docker compose logs --tail=200 app`.
 - Если HLS не играет, проверьте `NGINX_HLS_BASE_URL`, порт `8888` MediaMTX и наличие активного path в `/admin/ome`.
+- Если MediaMTX возвращает `no stream is available on path 'hls/camera_1'`, Nginx передал в MediaMTX лишний префикс `/hls`; обновите конфиг и пересоздайте `nginx`.
 - Если камера добавлена, но не играет, откройте `/admin/ome`: `camera_1` должен быть в текущем `mediamtx.yml` и в конфигурации paths API. После нажатия «Проверить playback URL» смотрите `active paths`, `HLS muxers` и логи `mediamtx`.
 - Если в диагнозе MediaMTX у path `ready=нет`, `available=нет`, `tracks=0`, MediaMTX не получил видеодорожку от RTSP-камеры. Проверьте RTSP URL из контейнера `app`, логин/пароль, доступность сети до камеры, выбранный RTSP transport и кодек камеры. Для некоторых Hikvision чаще нужен путь `/Streaming/Channels/101`, но система не переписывает URL автоматически и может работать с любым корректным RTSP URL.
 - Если OBS не подключается, проверьте `OME_RTMP_BASE_URL` и проброс порта `1935`.
