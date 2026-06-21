@@ -76,6 +76,7 @@ services:
     volumes:
       - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./media:/opt/bowling-portal/media:ro
+    restart: unless-stopped
 
   mediamtx:
     image: bluenviron/mediamtx:latest

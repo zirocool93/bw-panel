@@ -153,6 +153,7 @@ configure_public_urls
 mkdir -p media/archive logs
 docker compose build
 docker compose up -d --remove-orphans
+docker compose restart nginx
 docker compose exec -T app alembic upgrade head
 docker compose exec -T app python -m scripts.create_admin
 check_ome
