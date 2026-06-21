@@ -1,6 +1,5 @@
-from secrets import token_urlsafe
-from base64 import b64encode
 from urllib.parse import urlparse
+from secrets import token_urlsafe
 
 import httpx
 
@@ -8,6 +7,11 @@ from app.config import get_settings
 
 
 class OmeService:
+    """Compatibility wrapper around the active MediaMTX backend.
+
+    The class name is kept to avoid touching all routers in one migration step.
+    """
+
     def __init__(self) -> None:
         self.settings = get_settings()
 
@@ -16,11 +20,8 @@ class OmeService:
         return f"{prefix}_{suffix}".replace("-", "_")
 
     def playback_url(self, app_name: str, stream_name: str, playback_type: str = "hls", base_url: str | None = None) -> str:
-        # В текущей конфигурации OME включен LLHLS publisher, поэтому даже режим hls
-        # отдаем через llhls.m3u8. Это совместимо с hls.js в браузере.
-        suffix = "llhls.m3u8"
         base = (base_url or self.settings.nginx_hls_base_url).rstrip("/")
-        return f"{base}/{app_name}/{stream_name}/{suffix}"
+        return f"{base}/{stream_name}/index.m3u8"
 
     def browser_playback_url(self, app_name: str, stream_name: str, request_base_url: str) -> str:
         hls_base = f"{request_base_url.rstrip('/')}/hls"
@@ -31,20 +32,12 @@ class OmeService:
             return f"{protocol}://TODO-configure-ingest/{stream_key}"
         return f"{self.settings.ome_rtmp_base_url.rstrip('/')}/{stream_key}"
 
-    def api_headers(self) -> dict[str, str]:
-        if not self.settings.ome_api_access_token:
-            return {}
-        token = b64encode(self.settings.ome_api_access_token.encode("utf-8")).decode("ascii")
-        return {"Authorization": f"Basic {token}"}
-
     async def check_status(self) -> tuple[bool, str]:
         try:
             async with httpx.AsyncClient(timeout=3) as client:
-                response = await client.get(f"{self.settings.ome_api_url.rstrip('/')}/v1", headers=self.api_headers())
-            if response.status_code in {200, 204, 404}:
-                return True, f"API доступен, HTTP {response.status_code}"
-            if response.status_code in {401, 403}:
-                return False, f"API отвечает, но токен доступа неверный: HTTP {response.status_code}"
+                response = await client.get(f"{self.settings.ome_api_url.rstrip('/')}/v3/config/global/get")
+            if response.status_code in {200, 401, 403, 404}:
+                return True, f"MediaMTX API доступен, HTTP {response.status_code}"
             return response.status_code < 500, f"HTTP {response.status_code}"
         except Exception as exc:
             return False, str(exc)
@@ -53,18 +46,12 @@ class OmeService:
         ok, status = await self.check_status()
         public_base = urlparse(self.settings.public_base_url)
         host = public_base.hostname or "localhost"
-        external_api_url = f"{public_base.scheme or 'http'}://{host}:8081/v1"
-        username = ""
-        password_hint = ""
-        if ":" in self.settings.ome_api_access_token:
-            username, password_hint = self.settings.ome_api_access_token.split(":", 1)
+        external_api_url = f"{public_base.scheme or 'http'}://{host}:9997"
         return {
             "ok": ok,
             "status": status,
             "api_url": self.settings.ome_api_url,
             "external_api_url": external_api_url,
-            "api_username": username,
-            "api_password_hint": password_hint,
             "rtmp_url": self.settings.ome_rtmp_base_url,
             "hls_base_url": self.settings.nginx_hls_base_url,
         }

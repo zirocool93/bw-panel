@@ -10,7 +10,7 @@ fi
 
 [ -f .env ] || cp .env.example .env
 docker compose build
-docker compose up -d
+docker compose up -d --remove-orphans
 docker compose exec -T app alembic upgrade head
 docker image prune -f
 docker compose ps

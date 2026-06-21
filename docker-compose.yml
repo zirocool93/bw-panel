@@ -8,9 +8,9 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://bowling:bowling@postgres:5432/bowling}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost}
       NGINX_HLS_BASE_URL: ${NGINX_HLS_BASE_URL:-http://localhost/hls}
-      OME_RTMP_BASE_URL: ${OME_RTMP_BASE_URL:-rtmp://localhost:1935/app}
-      OME_API_URL: ${OME_API_URL:-http://ovenmediaengine:8081}
-      OME_API_ACCESS_TOKEN: ${OME_API_ACCESS_TOKEN:-ome-access-token}
+      OME_RTMP_BASE_URL: ${OME_RTMP_BASE_URL:-rtmp://localhost:1935}
+      OME_API_URL: ${OME_API_URL:-http://mediamtx:9997}
+      OME_API_ACCESS_TOKEN: ${OME_API_ACCESS_TOKEN:-}
       DEFAULT_ARCHIVE_DEPTH_DAYS: ${DEFAULT_ARCHIVE_DEPTH_DAYS:-14}
       DEFAULT_PLAYBACK_TYPE: ${DEFAULT_PLAYBACK_TYPE:-hls}
       ARCHIVE_ROOT: ${ARCHIVE_ROOT:-/opt/bowling-portal/media/archive}
@@ -33,20 +33,19 @@ services:
       start_period: 20s
     restart: unless-stopped
 
-  camera-worker:
+  mediamtx-configurator:
     build: .
-    command: ["python", "-m", "scripts.camera_restream"]
+    command: ["python", "-m", "scripts.mediamtx_configurator"]
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://bowling:bowling@postgres:5432/bowling}
-      CAMERA_RESTREAM_RTMP_BASE_URL: ${CAMERA_RESTREAM_RTMP_BASE_URL:-rtmp://ovenmediaengine:1935/app}
-      CAMERA_RESTREAM_POLL_SECONDS: ${CAMERA_RESTREAM_POLL_SECONDS:-10}
-      CAMERA_RESTREAM_TRANSCODE: ${CAMERA_RESTREAM_TRANSCODE:-0}
-      CAMERA_RESTREAM_VIDEO_FILTER: ${CAMERA_RESTREAM_VIDEO_FILTER:-scale='min(1920,iw)':-2}
-      CAMERA_RESTREAM_VIDEO_BITRATE: ${CAMERA_RESTREAM_VIDEO_BITRATE:-4500k}
+      MEDIAMTX_CONFIG_PATH: /config/mediamtx.yml
+      MEDIAMTX_CONFIG_POLL_SECONDS: ${MEDIAMTX_CONFIG_POLL_SECONDS:-10}
+    volumes:
+      - ./deploy/mediamtx:/config
     depends_on:
       postgres:
         condition: service_healthy
-      ovenmediaengine:
+      mediamtx:
         condition: service_started
     restart: unless-stopped
 
@@ -69,7 +68,7 @@ services:
     depends_on:
       app:
         condition: service_healthy
-      ovenmediaengine:
+      mediamtx:
         condition: service_started
     ports:
       - "${HTTP_PORT:-80}:80"
@@ -78,17 +77,16 @@ services:
       - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./media:/opt/bowling-portal/media:ro
 
-  ovenmediaengine:
-    image: airensoft/ovenmediaengine:latest
-    environment:
-      OME_API_PORT: ${OME_API_PORT:-8081}
-      OME_API_ACCESS_TOKEN: ${OME_API_ACCESS_TOKEN:-admin:ome-access-token}
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    command: ["/config/mediamtx.yml"]
     ports:
       - "${OME_RTMP_PORT:-1935}:1935"
-      - "${OME_API_PORT:-8081}:8081"
-      - "${OME_ORIGIN_PORT:-3333}:3333"
+      - "${OME_API_PORT:-9997}:9997"
+      - "${OME_RTSP_PORT:-8554}:8554"
+      - "${OME_ORIGIN_PORT:-8888}:8888"
     volumes:
-      - ./deploy/ovenmediaengine/Server.xml:/opt/ovenmediaengine/bin/origin_conf/Server.xml:ro
+      - ./deploy/mediamtx:/config
 
 volumes:
   postgres_data:

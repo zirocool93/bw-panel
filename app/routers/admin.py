@@ -326,24 +326,6 @@ async def settings_save(request: Request, db: Session = Depends(get_db)):
         item.value = value
         item.description = description
         db.add(item)
-    restream_keys = {
-        "camera_restream_transcode": "Включить перекодирование RTSP-камер в browser-friendly H.264",
-        "camera_restream_video_filter": "Фильтр ffmpeg для видео, например scale='min(1920,iw)':-2",
-        "camera_restream_video_bitrate": "Целевой битрейт видео при перекодировании",
-        "camera_restream_video_maxrate": "Максимальный битрейт видео при перекодировании",
-        "camera_restream_video_bufsize": "Буфер rate control при перекодировании",
-        "camera_restream_fps": "FPS при перекодировании",
-        "camera_restream_gop": "GOP/keyframe interval при перекодировании",
-        "camera_restream_x264_preset": "x264 preset при перекодировании",
-    }
-    for key, description in restream_keys.items():
-        value = form.get(key)
-        if key == "camera_restream_transcode":
-            value = "1" if form_bool(value) else "0"
-        item = db.scalar(select(SystemSetting).where(SystemSetting.key == key)) or SystemSetting(key=key)
-        item.value = str(value or "")
-        item.description = description
-        db.add(item)
     db.commit()
     return redirect("/admin/settings")
 

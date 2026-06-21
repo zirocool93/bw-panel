@@ -11,7 +11,7 @@
   <label>Камера<select name="camera_id" class="form-select"><option value="">Не выбрана</option>{% for camera in cameras %}<option value="{{ camera.id }}" {% if item and item.camera_id == camera.id %}selected{% endif %}>{{ camera.title }}</option>{% endfor %}</select></label>
   <label>OBS-вход<select name="obs_input_id" class="form-select"><option value="">Не выбран</option>{% for obs in obs_inputs %}<option value="{{ obs.id }}" {% if item and item.obs_input_id == obs.id %}selected{% endif %}>{{ obs.title }}</option>{% endfor %}</select></label>
   <label>Тип playback<select name="playback_type" class="form-select">{% for v in ["hls","ll_hls"] %}<option value="{{ v }}" {% if item and item.playback_type.value == v %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
-  <label>OME app<input name="ome_app_name" class="form-control" value="{{ item.ome_app_name if item else "app" }}"></label>
+  <label>MediaMTX app/group<input name="ome_app_name" class="form-control" value="{{ item.ome_app_name if item else "app" }}"></label>
   <label>Порядок<input type="number" name="sort_order" class="form-control" value="{{ item.sort_order if item else 100 }}"></label>
   <label class="wide">Внешний HLS URL<input name="external_url" class="form-control" value="{{ item.external_url if item else "" }}"></label>
   <label class="wide">Описание<textarea name="description" class="form-control">{{ item.description if item else "" }}</textarea></label>

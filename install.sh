@@ -47,12 +47,10 @@ prompt_admin_credentials() {
 
 }
 
-ensure_ome_token() {
-  current_ome_token="$(grep -E '^OME_API_ACCESS_TOKEN=' .env | cut -d= -f2- || true)"
-  if [ -z "$current_ome_token" ]; then
-    set_env_value OME_API_ACCESS_TOKEN "${OME_API_ACCESS_TOKEN:-admin:ome-access-token}"
-  elif ! echo "$current_ome_token" | grep -q ":"; then
-    set_env_value OME_API_ACCESS_TOKEN "admin:${current_ome_token}"
+ensure_media_server_defaults() {
+  current_api_url="$(grep -E '^OME_API_URL=' .env | cut -d= -f2- || true)"
+  if [ -z "$current_api_url" ] || echo "$current_api_url" | grep -q "ovenmediaengine"; then
+    set_env_value OME_API_URL "http://mediamtx:9997"
   fi
 }
 
@@ -73,21 +71,14 @@ configure_public_urls() {
     set_env_value NGINX_HLS_BASE_URL "http://${server_ip}/hls"
   fi
   if [ -z "$current_rtmp_base" ] || echo "$current_rtmp_base" | grep -q "localhost"; then
-    set_env_value OME_RTMP_BASE_URL "rtmp://${server_ip}:1935/app"
-  fi
-}
-
-ensure_camera_defaults() {
-  current_transcode="$(grep -E '^CAMERA_RESTREAM_TRANSCODE=' .env | cut -d= -f2- || true)"
-  if [ -z "$current_transcode" ]; then
-    set_env_value CAMERA_RESTREAM_TRANSCODE "0"
+    set_env_value OME_RTMP_BASE_URL "rtmp://${server_ip}:1935"
   fi
 }
 
 check_ome() {
-  echo "Проверка OvenMediaEngine..."
-  if ! docker compose ps ovenmediaengine | grep -qi "running\|up"; then
-    echo "Контейнер OvenMediaEngine не запущен. Проверьте: docker compose logs ovenmediaengine"
+  echo "Проверка MediaMTX..."
+  if ! docker compose ps mediamtx | grep -qi "running\|up"; then
+    echo "Контейнер MediaMTX не запущен. Проверьте: docker compose logs mediamtx"
     return 1
   fi
 
@@ -103,10 +94,10 @@ async def main():
 asyncio.run(main())
 PY
   then
-    echo "OvenMediaEngine доступен."
+    echo "MediaMTX доступен."
   else
-    echo "OvenMediaEngine запущен, но API/status endpoint не ответил штатно."
-    echo "Это может быть нормально для текущей конфигурации OME; проверьте логи при проблемах с трансляциями."
+    echo "MediaMTX запущен, но API/status endpoint не ответил штатно."
+    echo "Проверьте: docker compose logs mediamtx"
   fi
 }
 
@@ -157,12 +148,11 @@ fi
 cd "$TARGET_DIR"
 [ -f .env ] || cp .env.example .env
 prompt_admin_credentials
-ensure_ome_token
+ensure_media_server_defaults
 configure_public_urls
-ensure_camera_defaults
 mkdir -p media/archive logs
 docker compose build
-docker compose up -d
+docker compose up -d --remove-orphans
 docker compose exec -T app alembic upgrade head
 docker compose exec -T app python -m scripts.create_admin
 check_ome

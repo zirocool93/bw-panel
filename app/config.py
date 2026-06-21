@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://bowling:bowling@postgres:5432/bowling"
     public_base_url: str = "http://localhost"
     nginx_hls_base_url: str = "http://localhost/hls"
-    ome_rtmp_base_url: str = "rtmp://localhost:1935/app"
-    ome_api_url: str = "http://ovenmediaengine:8081"
+    ome_rtmp_base_url: str = "rtmp://localhost:1935"
+    ome_api_url: str = "http://mediamtx:9997"
     ome_api_access_token: str = ""
     default_archive_depth_days: int = 14
     default_playback_type: str = "hls"

@@ -1,10 +1,10 @@
 # Портал трансляций боулинг-клуба
 
-FastAPI-портал для публикации трансляций турниров боулинг-клуба. MVP включает админку, CRUD камер, OBS-входов, турниров и потоков, публичные страницы, HLS-плеер через hls.js, режимы доступа `public`, `token`, `password`, Docker Compose, Nginx, PostgreSQL и заготовку интеграции с OvenMediaEngine.
+FastAPI-портал для публикации трансляций турниров боулинг-клуба. MVP включает админку, CRUD камер, OBS-входов, турниров и потоков, публичные страницы, HLS-плеер через hls.js, режимы доступа `public`, `token`, `password`, Docker Compose, Nginx, PostgreSQL и интеграцию с MediaMTX.
 
 ## Архитектура
 
-Камеры Hikvision или OBS отправляют поток в OvenMediaEngine. Портал хранит метаданные турниров и источников, формирует playback URL, а зрителям отдает страницы с HTML5-плеером. RTSP-адреса камер не выводятся в публичную часть.
+MediaMTX тянет RTSP-потоки камер Hikvision по path и принимает RTMP-публикации от OBS. Портал хранит метаданные турниров и источников, формирует playback URL, а зрителям отдает страницы с HTML5-плеером. RTSP-адреса камер не выводятся в публичную часть.
 
 ## Установка
 
@@ -25,7 +25,7 @@ curl -fsSL https://raw.githubusercontent.com/zirocool93/bw-panel/main/install.sh
 sudo bash install.sh
 ```
 
-Скрипт проверяет Ubuntu/Debian, ставит Docker, создает `/opt/bowling-portal`, спрашивает логин, email и пароль первого администратора, поднимает контейнеры, применяет миграции, создает администратора и проверяет контейнер OvenMediaEngine. Для Proxmox LXC обычно нужны включенные `nesting` и `keyctl`.
+Скрипт проверяет Ubuntu/Debian, ставит Docker, создает `/opt/bowling-portal`, спрашивает логин, email и пароль первого администратора, поднимает контейнеры, применяет миграции, создает администратора и проверяет контейнер MediaMTX. Для Proxmox LXC обычно нужны включенные `nesting` и `keyctl`.
 
 Для автоматической установки без вопросов можно передать переменные:
 
@@ -33,25 +33,18 @@ sudo bash install.sh
 sudo ADMIN_PROMPT=0 ADMIN_USERNAME=admin ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD='strong-password' bash install.sh
 ```
 
-## OvenMediaEngine
+## MediaMTX
 
-OvenMediaEngine устанавливается как сервис `ovenmediaengine` в `docker-compose.yml`. В админке есть раздел `/admin/ome`, где можно:
+MediaMTX устанавливается как сервис `mediamtx` в `docker-compose.yml`. В админке есть раздел `/admin/ome`, где можно:
 
-- проверить статус OME;
+- проверить статус MediaMTX;
 - увидеть RTMP URL для OBS и HLS base URL;
 - посмотреть stream key для OBS-входов;
-- посмотреть OME stream names для камер;
+- посмотреть MediaMTX paths для камер;
 - проверить playback URL всех трансляций;
 - перегенерировать ingest/playback URL после изменения `.env`.
 
-REST API OME включен на порту `8081` и защищен Basic Auth токеном из `OME_API_ACCESS_TOKEN`. В браузере проверять лучше адрес `http://SERVER_IP:8081/v1`: без корректной авторизации OME может вернуть `401/403`, но это уже означает, что порт и API подняты.
-
-По умолчанию логин и пароль для браузерного окна OME:
-
-- логин: `admin`
-- пароль: `ome-access-token`
-
-Это соответствует значению `OME_API_ACCESS_TOKEN=admin:ome-access-token` в `.env`. Если меняете токен, используйте формат `логин:пароль`.
+MediaMTX API включен на порту `9997`. Конфиг paths автоматически генерирует сервис `mediamtx-configurator` из камер и OBS-входов в БД. HLS доступен через Nginx по `/hls/{path}/index.m3u8`.
 
 При установке `install.sh` автоматически заменяет `localhost` в `.env` на IP сервера для `PUBLIC_BASE_URL`, `NGINX_HLS_BASE_URL` и `OME_RTMP_BASE_URL`. Если нужно указать адрес вручную:
 
@@ -67,13 +60,24 @@ sudo PROJECT_DIR=/opt/bowling-portal bash update.sh
 
 Скрипт выполняет `git pull`, пересобирает контейнеры, применяет миграции и показывает статус сервисов.
 
+После перехода с OvenMediaEngine на MediaMTX можно выполнить вручную:
+
+```bash
+cd /opt/bowling-portal
+sudo git pull
+sudo docker compose build
+sudo docker compose up -d --remove-orphans
+```
+
+Старые контейнеры `ovenmediaengine` и `camera-worker` будут удалены как orphan-сервисы.
+
 ## Настройка `.env`
 
 Главные параметры: `SECRET_KEY`, `DATABASE_URL`, `PUBLIC_BASE_URL`, `NGINX_HLS_BASE_URL`, `OME_RTMP_BASE_URL`, `OME_API_URL`, `POSTGRES_PASSWORD`. Секреты нельзя коммитить в репозиторий.
 
 ## Рабочий процесс
 
-1. В админке добавьте камеры с RTSP URL. Пароль камеры после сохранения не показывается в форме. Сервис `camera-worker` автоматически ретранслирует активные RTSP-камеры в OvenMediaEngine без перекодирования по умолчанию.
+1. В админке добавьте камеры с RTSP URL. Пароль камеры после сохранения не показывается в форме. Сервис `mediamtx-configurator` автоматически добавит активные камеры в paths MediaMTX.
 2. Добавьте OBS-вход. Админка покажет server URL и stream key для OBS.
 3. Создайте турнир, выберите статус, публичность и режим доступа.
 4. В карточке турнира добавьте трансляции: камера, OBS или внешний HLS.
@@ -91,8 +95,7 @@ sudo PROJECT_DIR=/opt/bowling-portal bash update.sh
 
 - Если сайт отвечает `502 Bad Gateway`, проверьте приложение:
   `docker compose ps app` и `docker compose logs --tail=200 app`.
-- Если HLS не играет, проверьте `NGINX_HLS_BASE_URL`, порт `3333` OME и наличие активного потока.
-- Если камера добавлена, но не играет, проверьте `docker compose logs camera-worker`: именно этот сервис забирает RTSP и отправляет его в OME.
-- Перекодирование RTSP-камер включается в админке: `Настройки` -> `Ретрансляция камер`. По умолчанию оно выключено. Включайте его только если камера отдает поток, который браузер/HLS не воспроизводит напрямую.
+- Если HLS не играет, проверьте `NGINX_HLS_BASE_URL`, порт `8888` MediaMTX и наличие активного path.
+- Если камера добавлена, но не играет, проверьте `docker compose logs mediamtx-configurator` и `docker compose logs mediamtx`.
 - Если OBS не подключается, проверьте `OME_RTMP_BASE_URL` и проброс порта `1935`.
 - Если проверка камеры пишет про `ffprobe`, убедитесь, что контейнер пересобран с установленным `ffmpeg`.
